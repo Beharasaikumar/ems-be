@@ -1,0 +1,33 @@
+{
+  "employees": [
+    {
+      "id": "EMP001",
+      "name": "Ravi Kumar",
+      "email": "ravi@example.com",
+      "phone": "9000000001",
+      "role": "Software Engineer",
+      "department": "Engineering",
+      "joinDate": "2024-01-10",
+      "pan": "ABCDE1234F",
+      "basicSalary": 40000,
+      "hra": 16000,
+      "da": 4000,
+      "specialAllowance": 2000,
+      "bankAccountNumber": "XXXXXXXXXXXX1111",
+      "pfAccountNumber": "PF12345",
+      "esiNumber": ""
+    }
+  ],
+  "attendance": [
+    {
+      "employeeId": "EMP001",
+      "date": "2025-11-01",
+      "status": "Present"
+    },
+    {
+      "employeeId": "EMP001",
+      "date": "2025-11-02",
+      "status": "Present"
+    }
+  ]
+}
