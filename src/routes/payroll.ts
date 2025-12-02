@@ -93,11 +93,16 @@ export default function payrollRouter(dataSource: DataSource) {
     return res.json(payload);
   });
 
-  router.get('/employee/:employeeId', requireRole('admin'), async (req, res) => {
-    const rows = await payslipRepo.find({ where: { employeeId: req.params.employeeId }, order: { generatedDate: 'DESC' } });
-    const parsed = rows.map(r => ({ id: r.id, employeeId: r.employeeId, month: r.month, year: r.year, generatedDate: r.generatedDate, data: JSON.parse(r.data) }));
-    return res.json(parsed);
+router.get('/employee/:employeeId', requireRole('admin'), async (req, res) => {
+  const rows = await payslipRepo.find({ where: { employeeId: req.params.employeeId }, order: { generatedDate: 'DESC' } });
+   const parsed = rows.map(r => {
+    const payload = JSON.parse(r.data);
+     payload.id = r.id;
+    payload.generatedDate = r.generatedDate;
+    return payload;
   });
+  return res.json(parsed);
+});
 
   router.get('/view/:payslipId', async (req, res) => {
     const payslipId = req.params.payslipId;
@@ -243,5 +248,23 @@ export default function payrollRouter(dataSource: DataSource) {
     doc.end();
   });
 
+
+  router.get('/latest', requireRole('admin'), async (req, res) => {
+   const rows = await payslipRepo.find({ order: { generatedDate: 'DESC' } });
+  const map = new Map();
+  for (const r of rows) {
+    if (!map.has(r.employeeId)) {
+      const payload = JSON.parse(r.data);
+      payload.id = r.id;
+      payload.generatedDate = r.generatedDate;
+      map.set(r.employeeId, payload);
+    }
+  }
+  return res.json(Array.from(map.values()));
+});
+
   return router;
 }
+
+
+

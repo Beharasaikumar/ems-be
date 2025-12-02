@@ -1,5 +1,4 @@
-// src/data-source.ts
-import 'reflect-metadata';
+ import 'reflect-metadata';
 import { DataSource } from 'typeorm';
 import * as dotenv from 'dotenv';
 dotenv.config();

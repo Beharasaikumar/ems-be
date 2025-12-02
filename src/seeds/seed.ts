@@ -1,5 +1,4 @@
-// src/seeds/seed.ts
-import AppDataSource from '../ormconfig';
+ import AppDataSource from '../ormconfig';
 import { Employee } from '../entities/Employee';
 import { Attendance } from '../entities/Attendance';
 import * as path from 'path';

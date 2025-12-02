@@ -54,8 +54,7 @@ export default function employeesRouter(dataSource: DataSource) {
         await repo.delete({ id } as any);
         return res.json({ ok: true, softDeleted: false, fallback: 'hard-delete' });
       }
-      // other unexpected errors -> bubble up
-      console.error('Delete failed', err);
+       console.error('Delete failed', err);
       return res.status(500).json({ message: 'Delete failed', error: err?.message });
     }
 

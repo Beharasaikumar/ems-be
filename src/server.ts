@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import express from 'express';
 import cors from 'cors';
-import AppDataSource from './ormconfig'; // <- import the DataSource instance you exported
+import AppDataSource from './ormconfig'; 
 import dotenv from 'dotenv';
 import path from 'path';
 
