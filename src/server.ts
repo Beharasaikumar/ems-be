@@ -32,6 +32,7 @@ async function main() {
     console.log('Migrations complete');
   }
 
+  
   // pass the DataSource instance into routers that expect it
   app.use('/api/auth', authRouter(AppDataSource));
   app.use('/api/employees', employeesRouter(AppDataSource));

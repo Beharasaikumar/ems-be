@@ -9,9 +9,14 @@ export default function employeesRouter(dataSource: DataSource) {
   const repo = dataSource.getRepository(Employee);
 
   router.use(authRequired);
+  
+//   router.use((req, res, next) => {
+//   console.log(`[Employees] ${req.method} ${req.originalUrl} - body:`, req.body || '<no body>');
+//   next();
+// });
 
-  // GET /api/employees
-  router.get('/', requireRole('admin'), async (req, res) => {
+
+   router.get('/', requireRole('admin'), async (req, res) => {
     const list = await repo.find({ order: { name: 'ASC' } });
     res.json(list);
   });
@@ -22,13 +27,18 @@ export default function employeesRouter(dataSource: DataSource) {
     res.json(row);
   });
 
-  router.post('/', requireRole('admin'), async (req, res) => {
-    const payload = req.body as Partial<Employee>;
-    const id = `EMP${String(Math.floor(Math.random() * 900) + 100)}`;
-    const e = repo.create({ id, ...payload } as Employee);
-    await repo.save(e);
-    res.status(201).json(e);
-  });
+router.post('/', requireRole('admin'), async (req, res) => {
+  const payload = req.body as Partial<Employee>;
+  const { id: _ignoreId, createdAt: _c, updatedAt: _u, deletedAt: _d, ...rest } = payload as any;
+
+  const id = `EMP${String(Math.floor(Math.random() * 900) + 100)}`;
+
+   const e = repo.create({ id, ...rest } as Employee);
+  await repo.save(e);
+
+   res.status(201).json(e);
+});
+
 
   router.put('/:id', async (req, res) => {
     const id = req.params.id;
@@ -45,7 +55,7 @@ export default function employeesRouter(dataSource: DataSource) {
   });
 
   router.delete('/:id', requireRole('admin'), async (req, res) => {
-    const id = req.params.id;
+     const id = req.params.id;
     try {
       await repo.softDelete(id);
       return res.json({ ok: true, softDeleted: true });
