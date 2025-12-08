@@ -2,46 +2,118 @@ import { Router } from 'express';
 import { DataSource } from 'typeorm';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
-import { Employee } from '../entities/Employee';
-import { v4 as uuidv4 } from 'uuid';
-import dotenv from 'dotenv';
-dotenv.config();
-
-const JWT_SECRET = process.env.JWT_SECRET ?? 'replace-with-secure-secret';
-const JWT_EXPIRES_IN = '8h';
+import crypto from 'crypto';
+import nodemailer from 'nodemailer';
+import { User } from '../entities/User';
+import { PasswordResetToken } from '../entities/PasswordResetToken';
+ 
+const JWT_SECRET = process.env.JWT_SECRET || 'replace-with-secure-secret';
 
 export default function authRouter(dataSource: DataSource) {
   const router = Router();
-  const repo = dataSource.getRepository(Employee);
+  const userRepo = dataSource.getRepository(User);
+  const tokenRepo = dataSource.getRepository(PasswordResetToken);
 
-   (async () => {
-    const admin = await repo.findOneBy({ id: 'EMPADMIN' });
-    if (!admin) {
-      await repo.save({
-        id: 'EMPADMIN',
-        name: 'Admin User',
-        email: 'admin@example.com',
-        appRole: 'admin',
-        basicSalary: 0
-      } as any);
-      console.log('Admin user inserted: EMPADMIN');
-    }
-  })();
+   router.post('/signup', async (req, res) => {
+    const { username, email, password } = req.body;
+
+    const exists = await userRepo.findOne({
+      where: [{ username }, { email }]
+    });
+
+    if (exists) return res.status(400).json({ message: 'User already exists' });
+    
+    const hashedPassword = await bcrypt.hash(password, 10); 
+
+    const user = userRepo.create({ username, email, password: hashedPassword });
+    await userRepo.save(user);
+
+    res.json({ ok: true, message: 'Account created successfully' });
+  });
 
    router.post('/login', async (req, res) => {
-    const { username, password } = req.body as { username?: string; password?: string };
-      if (username === 'admin' && (password === process.env.ADMIN_PASSWORD || password === 'admin')) {
-      const token = jwt.sign({ id: 'EMPADMIN', username: 'admin', role: 'admin' }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
-      return res.json({ ok: true, token, user: { id: 'EMPADMIN', username: 'admin', role: 'admin' } });
+    const { username, password } = req.body;
+
+    const user = await userRepo.findOne({ where: { username } });
+    if (!user) return res.status(401).json({ message: 'Invalid credentials' });
+
+    const valid = await bcrypt.compare(password, user.password);
+    if (!valid) return res.status(401).json({ message: 'Invalid credentials' });
+
+    const token = jwt.sign(
+      { id: user.id, username: user.username, role: user.role },
+      JWT_SECRET,
+      { expiresIn: '8h' }
+    );
+
+    res.json({ ok: true, token, user });
+  });
+
+   router.post('/forgot-password', async (req, res) => {
+    const { email } = req.body;
+
+    const user = await userRepo.findOne({ where: { email } });
+
+     if (!user) return res.json({ ok: true });
+
+    const token = crypto.randomBytes(32).toString('hex');
+
+    await tokenRepo.delete({ userId: user.id });
+
+    await tokenRepo.save({
+      userId: user.id,
+      token,
+      expiresAt: new Date(Date.now() + 15 * 60 * 1000) // 15 mins
+    });
+
+    const frontend_url = process.env.FRONTEND_URL || 'http://localhost:3000';
+
+    const resetUrl = `${frontend_url}/reset-password/${token}`;
+
+    const mailer = nodemailer.createTransport({ 
+      host: process.env.SMTP_HOST || 'smtp.gmail.com', 
+      port: Number(process.env.SMTP_PORT || 465), 
+      secure: true, 
+      auth: { 
+        user: process.env.SMTP_USER || 'example@gmail.com', 
+        pass: process.env.SMTP_PASS || 'yourpassword' 
+      } 
+    });
+
+    await mailer.sendMail({
+      from: process.env.SMTP_USER || 'hr@lomaait.com' ,
+      to: user.email,
+      subject: 'Reset Your Password',
+      html: `
+        <h2>Password Reset</h2>
+        <p>Click the link below to reset your password:</p>
+        <a href="${resetUrl}">${resetUrl}</a>
+        <p>This link expires in 15 minutes.</p>
+      `
+    });
+
+    res.json({ ok: true, message: 'Reset link sent to email' });
+  });
+
+   router.post('/reset-password/:token', async (req, res) => {
+    const { token } = req.params;
+    const { password } = req.body;
+
+    const reset = await tokenRepo.findOne({ where: { token } });
+
+    if (!reset || reset.expiresAt < new Date()) {
+      return res.status(400).json({ message: 'Invalid or expired token' });
     }
 
-     const emp = await repo.findOneBy({ id: username ?? '' });
-    if (emp) {
-       const token = jwt.sign({ id: emp.id, username: emp.name, role: emp.appRole }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
-      return res.json({ ok: true, token, user: { id: emp.id, username: emp.name, role: emp.appRole } });
-    }
+    const user = await userRepo.findOneBy({ id: reset.userId });
+    if (!user) return res.status(404).json({ message: 'User not found' });
 
-    return res.status(401).json({ ok: false, message: 'Invalid credentials' });
+    user.password = await bcrypt.hash(password, 10);
+    await userRepo.save(user);
+
+    await tokenRepo.delete({ id: reset.id });
+
+    res.json({ ok: true, message: 'Password reset successful' });
   });
 
   return router;

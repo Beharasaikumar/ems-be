@@ -40,7 +40,7 @@ router.post('/', requireRole('admin'), async (req, res) => {
 });
 
 
-  router.put('/:id', async (req, res) => {
+  router.put('/:id', authRequired, async (req, res) => {
     const id = req.params.id;
     const user = (req as any).user;
 

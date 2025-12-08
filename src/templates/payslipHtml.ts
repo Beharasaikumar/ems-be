@@ -14,7 +14,7 @@ export function buildPayslipHtml(payload: any, logoUrl?: string) {
 
 
      const logoHtml = logoUrl
-    ? `<div class="logo-container" aria-hidden="true" style="position:relative;width:40px;height:40px;flex:0 0 40px;">
+    ? `<div class="logo-container" aria-hidden="true" style="position:relative;width:200px;height:80px;flex:0 0 40px; align-items:center;justify-content:center;display:inline-flex;">
          <img src="${escapeHtml(logoUrl)}" alt="Company Logo"
            style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;border-radius:999px;display:block;"
            onerror="this.style.display='none'"/>
@@ -78,23 +78,8 @@ export function buildPayslipHtml(payload: any, logoUrl?: string) {
         padding-bottom:20px;
         margin-bottom:20px;
       }
-      .brand {
-        display:inline-flex;
-        align-items:center;
-        gap:12px;
-        margin-bottom:6px;
-      }
-      .logo-wrap {
-        position:relative;
-        width:40px;
-        height:40px;
-        border-radius:999px;
-        background:var(--slate-800);
-        display:inline-flex;
-        align-items:center;
-        justify-content:center;
-        box-shadow: 0 6px 18px rgba(2,6,23,0.08);
-      }
+      
+ 
       
     
 
@@ -186,17 +171,13 @@ export function buildPayslipHtml(payload: any, logoUrl?: string) {
   <body>
     <div id="printable-area">
       <div class="header">
-        <div class="brand" style="justify-content:center;">
+      
           <div class="logo-wrap" aria-hidden="true">
             ${logoHtml}
           </div>
-          <div class="company" style="text-align:left;">
-            <h1>Lomaa</h1>
-            <p>IT SOLUTIONS</p>
-          </div>
-        </div>
-        <div class="locations">India | USA | Australia | Ireland</div>
-      </div>
+         
+       
+       </div>
 
       <div style="text-align:center; font-weight:700; color:var(--slate-700); margin-bottom:14px;">Payslip — ${escapeHtml(monthLabel)}</div>
 

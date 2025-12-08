@@ -7,13 +7,14 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "seed": "ts-node src/seeds/seed.ts",
-    "typeorm": "ts-node-dev ./node_modules/typeorm/cli.js",
-    "migration:run": "npm run typeorm -- migration:run -d src/ormconfig.ts",
+    "typeorm": "typeorm-ts-node-commonjs -d src/ormconfig.ts",
+    "migration:run": "npm run typeorm -- migration:run",
     "migration:revert": "npm run typeorm -- migration:revert -d src/ormconfig.ts"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
+    "crypto": "^1.0.1",
     "dotenv": "^17.2.3",
     "express": "^4.18.2",
     "jsonwebtoken": "^9.0.0",
