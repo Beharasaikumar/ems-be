@@ -12,6 +12,7 @@ export class CreateInitialTables1680000000000 implements MigrationInterface {
         department TEXT,
         joinDate TEXT,
         pan TEXT,
+        monthlygrosssalary INTEGER,
         basicSalary INTEGER,
         hra INTEGER,
         da INTEGER,
@@ -31,7 +32,7 @@ export class CreateInitialTables1680000000000 implements MigrationInterface {
         id TEXT PRIMARY KEY,
         employeeId TEXT NOT NULL,
         date TEXT NOT NULL,
-        status TEXT NOT NULL
+        status TEXT NOT NULL DEFAULT 'Present'
       );
     `);
 

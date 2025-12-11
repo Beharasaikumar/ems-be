@@ -10,33 +10,64 @@ export default function attendanceRouter(dataSource: DataSource) {
 
   router.use(authRequired);
 
-  router.get('/', async (req, res) => {
-    const { month, employeeId } = req.query as { month?: string; employeeId?: string };
-    if (employeeId && month) {
-      const rows = await repo.find({ where: { employeeId }, order: { date: 'ASC' } });
-      return res.json(rows.filter(r => r.date.startsWith(month)));
+router.get('/', async (req, res) => {
+  const { month } = req.query as { month?: string };
+
+  if (!month) {
+    const rows = await repo.find();
+    return res.json(rows);
+  }
+
+  const today = new Date().toISOString().split('T')[0];
+
+   const employees = await dataSource.getRepository('employees').find();
+  for (const emp of employees) {
+    const existing = await repo.findOneBy({ employeeId: emp.id, date: today } as any);
+
+    if (!existing) {
+      const record = repo.create({
+        id: uuidv4(),
+        employeeId: emp.id,
+        date: today,
+        status: 'Present'
+      });
+      await repo.save(record);
     }
-    if (month) {
-      const rows = await repo.find();
-      return res.json(rows.filter(r => r.date.startsWith(month)));
-    }
-    if (employeeId) {
-      const rows = await repo.find({ where: { employeeId }, order: { date: 'ASC' } });
-      return res.json(rows);
-    }
-    const rows = await repo.find({ order: { employeeId: 'ASC', date: 'ASC' } });
-    res.json(rows);
-  });
+  }
+
+  const rows = await repo.find();
+  return res.json(rows.filter(r => r.date.startsWith(month)));
+});
+
+
+  // router.get('/', async (req, res) => {
+  //   const { month, employeeId } = req.query as { month?: string; employeeId?: string };
+  //   if (employeeId && month) {
+  //     const rows = await repo.find({ where: { employeeId }, order: { date: 'ASC' } });
+  //     return res.json(rows.filter(r => r.date.startsWith(month)));
+  //   }
+  //   if (month) {
+  //     const rows = await repo.find();
+  //     return res.json(rows.filter(r => r.date.startsWith(month)));
+  //   }
+  //   if (employeeId) {
+  //     const rows = await repo.find({ where: { employeeId }, order: { date: 'ASC' } });
+  //     return res.json(rows);
+  //   }
+  //   const rows = await repo.find({ order: { employeeId: 'ASC', date: 'ASC' } });
+  //   res.json(rows);
+  // });
 
   router.post('/', async (req, res) => {
-    const { employeeId, date, status } = req.body as { employeeId?: string; date?: string; status?: string };
-    if (!employeeId || !date || !status) return res.status(400).json({ message: 'employeeId, date, status required' });
+    const { employeeId, date, status} = req.body as { employeeId?: string; date?: string; status?: string };
+    if (!employeeId || !date) return res.status(400).json({ message: 'employeeId, date required' });
 
+    const finalstatus = status || 'Present';
     let record = await repo.findOneBy({ employeeId, date } as any);
     if (!record) {
-      record = repo.create({ id: uuidv4(), employeeId, date, status });
+      record = repo.create({ id: uuidv4(), employeeId, date, status:finalstatus });
     } else {
-      record.status = status;
+      record.status = finalstatus;
     }
     await repo.save(record);
     res.json(record);

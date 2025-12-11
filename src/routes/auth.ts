@@ -75,8 +75,8 @@ export default function authRouter(dataSource: DataSource) {
       port: Number(process.env.SMTP_PORT || 465), 
       secure: true, 
       auth: { 
-        user: process.env.SMTP_USER || 'example@gmail.com', 
-        pass: process.env.SMTP_PASS || 'yourpassword' 
+        user: process.env.SMTP_USER || 'hr@lomaait.com', 
+        pass: process.env.SMTP_PASS || '' 
       } 
     });
 

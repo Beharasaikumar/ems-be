@@ -12,6 +12,6 @@ export class Attendance {
   @Column({ name: 'date' })
   date!: string; // format: YYYY-MM-DD
 
-  @Column({ name: 'status' })
-  status!: string; // 'Present' | 'Absent' | 'Half Day' | 'Leave' | custom
+  @Column({ name: 'status' , default: 'Present' })
+  status!: string; 
 }

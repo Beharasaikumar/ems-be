@@ -30,6 +30,9 @@ export class Employee {
   @Column({ name: 'basicsalary', type: 'integer', nullable: true })
   basicSalary?: number;
 
+  @Column({ name: 'monthlygrosssalary', type: 'integer', nullable: true })
+  monthlyGrossSalary?: number;
+
   @Column({ name: 'hra', type: 'integer', nullable: true })
   hra?: number;
 

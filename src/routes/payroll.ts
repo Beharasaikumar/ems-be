@@ -144,7 +144,7 @@ export default function payrollRouter(dataSource: DataSource) {
       console.warn('hydrate emp error', err);
     }
 
-     let logoDataUri;
+    let logoDataUri;
     const logoPath = path.join(process.cwd(), 'public', 'logo.png');
     if (fs.existsSync(logoPath)) {
       const buf = fs.readFileSync(logoPath);
@@ -178,8 +178,8 @@ export default function payrollRouter(dataSource: DataSource) {
 
       const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
       const smtpPort = Number(process.env.SMTP_PORT ?? 465);
-      const smtpUser = process.env.SMTP_USER || 'example@gmail.com';
-      const smtpPass = process.env.SMTP_PASS || 'yourpassword';
+      const smtpUser = process.env.SMTP_USER || 'hr@lomaait.com';
+      const smtpPass = process.env.SMTP_PASS || '';
 
       if (!smtpHost || !smtpUser || !smtpPass) {
         return res.status(503).json({
@@ -218,10 +218,76 @@ export default function payrollRouter(dataSource: DataSource) {
     const emp = await empRepo.findOneBy({ id: employeeId });
     if (!emp) return res.status(404).json({ message: 'Employee not found' });
 
-    const month = (req.body && req.body.month) || (() => {
-      const d = new Date();
-      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-    })();
+    // const month = (req.body && req.body.month) || (() => {
+    //   const d = new Date();
+    //   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    // })();
+
+    let month: string | undefined;
+if (!req.body) month = undefined;
+else if (typeof req.body === 'string') {
+  // client sent a raw string like "2025-10"
+  month = req.body;
+} else if (typeof req.body === 'object') {
+  month = (req.body as any).month;
+}
+if (!month) {
+  const d = new Date();
+  month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+ month = String(month).trim();
+
+ async function backfillAttendanceForMonth(employeeId: string, monthStr: string, joinDateStr?: string) {
+    const parts = (monthStr || '').split('-');
+    if (parts.length < 2) return;
+    const year = Number(parts[0]);
+    const monthIndex = Number(parts[1]) - 1;
+    if (!year || isNaN(monthIndex)) return;
+
+    const startOfMonth = new Date(year, monthIndex, 1);
+    let endOfMonth = new Date(year, monthIndex + 1, 0); // last day of month
+
+    const today = new Date();
+    if (endOfMonth > today) endOfMonth = today; // don't backfill future days
+
+    // if joinDate is provided and is after startOfMonth, adjust start
+    if (joinDateStr) {
+      const joinDate = new Date(joinDateStr);
+      if (!isNaN(joinDate.getTime())) {
+        if (joinDate > endOfMonth) return; // join date after this month -> nothing to seed
+        if (joinDate > startOfMonth) startOfMonth.setTime(joinDate.getTime());
+      }
+    }
+
+    const attRepository = attRepo; // use existing repo
+    const cur = new Date(startOfMonth);
+    while (cur <= endOfMonth) {
+      const dStr = cur.toISOString().split('T')[0];
+      const existing = await attRepository.findOneBy({ employeeId, date: dStr } as any);
+      if (!existing) {
+        const rec = attRepository.create({
+          id: uuidv4(),
+          employeeId,
+          date: dStr,
+          status: 'Present'
+        });
+        try {
+          await attRepository.save(rec);
+        } catch (e) {
+          // ignore save errors (race/unique conflicts)
+          console.warn('backfill save failed', employeeId, dStr, e);
+        }
+      }
+      cur.setDate(cur.getDate() + 1);
+    }
+  }
+
+  try {
+    await backfillAttendanceForMonth(employeeId, month, emp.joinDate);
+  } catch (err) {
+    console.warn('Backfill attendance failed', err);
+  }
 
     const [yearStr, monthStr] = month.split('-');
     const year = Number(yearStr);
@@ -230,6 +296,7 @@ export default function payrollRouter(dataSource: DataSource) {
 
     const monthRecords = await attRepo.find({ where: { employeeId } });
     const filtered = monthRecords.filter(r => r.date.startsWith(month));
+
     let paidDays = 0;
     if (filtered.length > 0) {
       for (const r of filtered) {
@@ -238,7 +305,9 @@ export default function payrollRouter(dataSource: DataSource) {
         else if (r.status === 'Half Day') paidDays += 0.5;
       }
     } else {
-      paidDays = totalDaysInMonth;
+      return res.status(400).json({
+        message: `Cannot generate payslip. No attendance found for ${month}.`
+      });
     }
 
     paidDays = Math.min(paidDays, totalDaysInMonth);
@@ -264,12 +333,12 @@ export default function payrollRouter(dataSource: DataSource) {
       employeeName: emp.name,
       month,
       year,
-      generatedDate: new Date().toLocaleDateString(),
+      generatedDate: new Date().toISOString(),
       attendancePercentage,
       earnings: { basic, hra, da, specialAllowance, gross },
       deductions: { pf, esi, pt, tax, totalDeductions },
       netSalary,
-      remarks: `Auto-generated (${month})`
+      remarks: `Auto-generated (${month})` || 'Thank you for your contribution this month.'
     };
 
     const p = payslipRepo.create({
