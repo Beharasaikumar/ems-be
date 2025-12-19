@@ -3,8 +3,7 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
-  UpdateDateColumn,
-  BeforeInsert
+  UpdateDateColumn
 } from 'typeorm';
 import bcrypt from 'bcrypt';
 
@@ -25,14 +24,13 @@ export class User {
   @Column({ default: 'employee' })
   role!: 'admin' | 'employee';
 
+  @Column({ nullable: true, unique: true })
+  employeeId?: string;
+
   @CreateDateColumn()
   createdAt!: Date;
 
   @UpdateDateColumn()
   updatedAt!: Date;
 
-  @BeforeInsert()
-  async hashPassword() {
-    this.password = await bcrypt.hash(this.password, 10);
-  }
 }

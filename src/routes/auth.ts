@@ -6,6 +6,7 @@ import crypto from 'crypto';
 import nodemailer from 'nodemailer';
 import { User } from '../entities/User';
 import { PasswordResetToken } from '../entities/PasswordResetToken';
+import { AuthRequest, authRequired } from '../middleware/auth';
  
 const JWT_SECRET = process.env.JWT_SECRET || 'replace-with-secure-secret';
 
@@ -14,22 +15,22 @@ export default function authRouter(dataSource: DataSource) {
   const userRepo = dataSource.getRepository(User);
   const tokenRepo = dataSource.getRepository(PasswordResetToken);
 
-   router.post('/signup', async (req, res) => {
-    const { username, email, password } = req.body;
+  //  router.post('/signup', async (req, res) => {
+  //   const { username, email, password } = req.body;
 
-    const exists = await userRepo.findOne({
-      where: [{ username }, { email }]
-    });
+  //   const exists = await userRepo.findOne({
+  //     where: [{ username }, { email }]
+  //   });
 
-    if (exists) return res.status(400).json({ message: 'User already exists' });
+  //   if (exists) return res.status(400).json({ message: 'User already exists' });
     
-    const hashedPassword = await bcrypt.hash(password, 10); 
+  //   const hashedPassword = await bcrypt.hash(password, 10); 
 
-    const user = userRepo.create({ username, email, password: hashedPassword });
-    await userRepo.save(user);
+  //   const user = userRepo.create({ username, email, password: hashedPassword });
+  //   await userRepo.save(user);
 
-    res.json({ ok: true, message: 'Account created successfully' });
-  });
+  //   res.json({ ok: true, message: 'Account created successfully' });
+  // });
 
    router.post('/login', async (req, res) => {
     const { username, password } = req.body;
@@ -41,7 +42,7 @@ export default function authRouter(dataSource: DataSource) {
     if (!valid) return res.status(401).json({ message: 'Invalid credentials' });
 
     const token = jwt.sign(
-      { id: user.id, username: user.username, role: user.role },
+      { id: user.id, employeeId: user.employeeId ?? null, username: user.username, role: user.role },
       JWT_SECRET,
       { expiresIn: '8h' }
     );
@@ -75,13 +76,13 @@ export default function authRouter(dataSource: DataSource) {
       port: Number(process.env.SMTP_PORT || 465), 
       secure: true, 
       auth: { 
-        user: process.env.SMTP_USER || 'hr@lomaait.com', 
-        pass: process.env.SMTP_PASS || '' 
+        user: process.env.SMTP_USER || 'beharasaikumar1@gmail.com', 
+        pass: process.env.SMTP_PASS || 'ailsfwlwfxihzbwz' 
       } 
     });
 
     await mailer.sendMail({
-      from: process.env.SMTP_USER || 'hr@lomaait.com' ,
+      from: process.env.SMTP_USER || 'beharasaikumar1@gmail.com' ,
       to: user.email,
       subject: 'Reset Your Password',
       html: `
@@ -114,6 +115,10 @@ export default function authRouter(dataSource: DataSource) {
     await tokenRepo.delete({ id: reset.id });
 
     res.json({ ok: true, message: 'Password reset successful' });
+  });
+
+  router.get('/me', authRequired, (req: AuthRequest, res) => {
+    res.json(req.user);
   });
 
   return router;

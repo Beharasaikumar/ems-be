@@ -1,4 +1,4 @@
- export function escapeHtml(s: any) {
+export function escapeHtml(s: any) {
   if (s === null || s === undefined) return '';
   return String(s)
     .replace(/&/g, '&amp;')
@@ -11,9 +11,10 @@ export function buildPayslipHtml(payload: any, logoUrl?: string) {
   const emp = payload.employee ?? {};
   const fmt = (n: any) => `₹${Number(n ?? 0).toLocaleString('en-IN')}`;
   const daysPresent = Math.round(((emp.attendancePercentage ?? payload.attendancePercentage ?? 0) / 100) * 30);
+  const grossMonthly = payload.monthlyGrossSalary ?? payload.earnings?.gross ?? 0;
 
 
-     const logoHtml = logoUrl
+  const logoHtml = logoUrl
     ? `<div class="logo-container" aria-hidden="true" style="position:relative;width:200px;height:80px;flex:0 0 40px; align-items:center;justify-content:center;display:inline-flex;">
          <img src="${escapeHtml(logoUrl)}" alt="Company Logo"
            style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;border-radius:999px;display:block;"
@@ -23,7 +24,7 @@ export function buildPayslipHtml(payload: any, logoUrl?: string) {
          <div style="color:#fff;font-weight:700;font-size:18px;line-height:1;">L</div>
          <div style="position:absolute;right:-6px;top:-6px;width:12px;height:12px;border-radius:50%;background:#10b981;box-shadow:0 1px 0 rgba(0,0,0,0.08) inset;"></div>
        </div>`;
-       
+
   return `
   <!doctype html>
   <html>
@@ -62,13 +63,14 @@ export function buildPayslipHtml(payload: any, logoUrl?: string) {
 
       /* card */
       #printable-area { 
-        max-width: 720px;
+        max-width: 680px;
         margin: 0 auto;
         background: #fff;
         border: 1px solid var(--slate-200);
         border-radius: 14px;
         padding: 32px;
         box-shadow: 0 6px 18px rgba(2,6,23,0.06);
+        box-sizing: border-box;
       }
 
       /* header */
@@ -118,22 +120,47 @@ export function buildPayslipHtml(payload: any, logoUrl?: string) {
         padding:12px 14px;
         border-bottom:1px solid var(--slate-200);
       }
-      .salary-body { padding:14px; display:block; font-size:13px; color:var(--slate-700); }
+      .salary-body { padding:10px 12px; display:block; font-size:13px; color:var(--slate-700); }
       .earning-row, .deduction-row {
         display:flex;
         justify-content:space-between;
-        margin:8px 0;
+        margin:6px 0;
+        font-size:13px;
       }
       .two-col {
         display:grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: minmax(0,1fr) minmax(0,1fr);
+        gap:10px;
       }
+        .earning-row div:last-child,
+        .deduction-row div:last-child,
+        .summary-row div:last-child {
+         text-align: right;
+         white-space: nowrap;
+     }
+
       .deductions-col { border-left:1px solid var(--slate-200); padding-left:14px; background: rgba(248,250,252,0.5); }
 
       hr.sep { border:none; border-top:1px dashed var(--slate-200); margin:12px 0; }
 
-      .summary-row { display:flex; justify-content:space-between; font-weight:700; padding:12px 14px; background:#fbfdff; border-top:1px solid var(--slate-200); }
+      .summary-row { display:flex; justify-content:space-between; align-items:center; font-weight:700; padding:12px 14px; background:#fbfdff; border-top:1px solid var(--slate-200); }
       .summary-row .deduction { color: var(--danger); }
+
+      .summary-stack {
+  border-top:1px dashed var(--slate-200);
+  margin-top:12px;
+  display:flex; 
+  justify-content:space-between;
+}
+.summary-stack .summary-row {
+  display:flex;
+  gap:70px;
+  padding:10px 14px;
+  font-weight:700;
+}
+.summary-stack .deduction {
+  color:var(--danger);
+}
 
       /* net pay band */
       .net-band {
@@ -142,12 +169,30 @@ export function buildPayslipHtml(payload: any, logoUrl?: string) {
         align-items:center;
         background:var(--emerald-50);
         border:1px solid var(--emerald-100);
-        padding:14px;
+        padding:16px;
         border-radius:10px;
+        font-size:14px;
         font-weight:800;
-        margin-bottom:14px;
+        margin-top:18px;
       }
-      .net-band .amount { font-size:22px; color:var(--emerald-700); font-weight:900; }
+      .net-band .amount { font-size:20px; color:var(--emerald-700); font-weight:900; }
+
+      .gross-highlight {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:12px 16px;
+  margin:16px 0 18px;
+  border-radius:10px;
+  background:linear-gradient(90deg, #ecfdf5, #f0fdf9);
+  border:1px solid var(--emerald-100);
+  font-size:14px;
+  font-weight:700;
+}
+.gross-highlight strong {
+  font-size:16px;
+  color:var(--emerald-700);
+}
 
       /* remarks */
       .remarks {
@@ -223,11 +268,20 @@ export function buildPayslipHtml(payload: any, logoUrl?: string) {
         </div>
       </div>
 
+       <div class="gross-highlight">
+  <span>Monthly Gross Salary</span>
+  <strong>${fmt(grossMonthly)}</strong>
+</div>
+
+
       <div class="salary-box">
         <div class="salary-header">
           <div>Earnings</div>
           <div style="text-align:right">Deductions</div>
         </div>
+
+   
+
 
         <div class="salary-body two-col">
           <div>
@@ -246,21 +300,25 @@ export function buildPayslipHtml(payload: any, logoUrl?: string) {
         </div>
 
         <hr class="sep" />
+      <div class="summary-stack">
+  <div class="summary-row">
+    <span>Gross Earnings</span>
+    <span>${fmt(payload.earnings.gross)}</span>
+  </div>
 
-        <div class="summary-row">
-          <div>Gross Earnings</div>
-          <div>${fmt(payload.earnings.gross)}</div>
-        </div>
-        <div class="summary-row" style="border-top:none;">
-          <div style="visibility:hidden">x</div>
-          <div class="deduction">Total Ded. ${fmt(payload.deductions.totalDeductions)}</div>
-        </div>
+  <div class="summary-row deduction">
+    <span>Total Deductions</span>
+    <span>${fmt(payload.deductions.totalDeductions)}</span>
+  </div>
+</div>
+
       </div>
 
       <div class="net-band">
         <div style="font-weight:900; color:var(--emerald-900);">Net Pay</div>
         <div class="amount">${fmt(payload.netSalary)}</div>
       </div>
+
 
       ${payload.remarks ?? emp.remarks ? `
         <div class="remarks">

@@ -27,11 +27,11 @@ export class Employee {
   @Column({ name: 'pan', nullable: true })
   pan?: string;
 
-  @Column({ name: 'basicsalary', type: 'integer', nullable: true })
-  basicSalary?: number;
-
   @Column({ name: 'monthlygrosssalary', type: 'integer', nullable: true })
   monthlyGrossSalary?: number;
+
+  @Column({ name: 'basicsalary', type: 'integer', nullable: true })
+  basicSalary?: number;
 
   @Column({ name: 'hra', type: 'integer', nullable: true })
   hra?: number;
@@ -41,6 +41,15 @@ export class Employee {
 
   @Column({ name: 'specialallowance', type: 'integer', nullable: true })
   specialAllowance?: number;
+
+  // @Column({ name: 'sickleave', type: 'integer', default: 10 })
+  // sickleave!: number;
+
+  // @Column({ name: 'casualleave', type: 'integer', default: 10 })
+  // casualleave!: number;
+
+  // @Column({ name: 'paidleave', type: 'integer', default: 15 })
+  // paidleave!: number;
 
   @Column({ name: 'bankaccountnumber', nullable: true })
   bankAccountNumber?: string;

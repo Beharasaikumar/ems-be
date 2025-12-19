@@ -107,6 +107,7 @@ export default function payrollRouter(dataSource: DataSource) {
         margin: { top: '20mm', bottom: '20mm', left: '12mm', right: '12mm' },
       });
 
+
       await browser.close();
 
       res.setHeader('Content-Type', 'application/pdf');
@@ -168,18 +169,19 @@ export default function payrollRouter(dataSource: DataSource) {
       await page.setContent(html, { waitUntil: 'networkidle0' });
       await page.emulateMediaType('screen');
 
-      const pdfBuffer = await page.pdf({
+      const pdfUint8 = await page.pdf({
         format: 'A4',
         printBackground: true,
         margin: { top: '20mm', bottom: '20mm', left: '12mm', right: '12mm' },
       });
+      const pdfBuffer = Buffer.from(pdfUint8);
 
       await browser.close();
 
       const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
       const smtpPort = Number(process.env.SMTP_PORT ?? 465);
-      const smtpUser = process.env.SMTP_USER || 'hr@lomaait.com';
-      const smtpPass = process.env.SMTP_PASS || '';
+      const smtpUser = process.env.SMTP_USER || 'beharasaikumar1@gmail.com';
+      const smtpPass = process.env.SMTP_PASS || 'ailsfwlwfxihzbwz';
 
       if (!smtpHost || !smtpUser || !smtpPass) {
         return res.status(503).json({
@@ -224,70 +226,70 @@ export default function payrollRouter(dataSource: DataSource) {
     // })();
 
     let month: string | undefined;
-if (!req.body) month = undefined;
-else if (typeof req.body === 'string') {
-  // client sent a raw string like "2025-10"
-  month = req.body;
-} else if (typeof req.body === 'object') {
-  month = (req.body as any).month;
-}
-if (!month) {
-  const d = new Date();
-  month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-}
-
- month = String(month).trim();
-
- async function backfillAttendanceForMonth(employeeId: string, monthStr: string, joinDateStr?: string) {
-    const parts = (monthStr || '').split('-');
-    if (parts.length < 2) return;
-    const year = Number(parts[0]);
-    const monthIndex = Number(parts[1]) - 1;
-    if (!year || isNaN(monthIndex)) return;
-
-    const startOfMonth = new Date(year, monthIndex, 1);
-    let endOfMonth = new Date(year, monthIndex + 1, 0); // last day of month
-
-    const today = new Date();
-    if (endOfMonth > today) endOfMonth = today; // don't backfill future days
-
-    // if joinDate is provided and is after startOfMonth, adjust start
-    if (joinDateStr) {
-      const joinDate = new Date(joinDateStr);
-      if (!isNaN(joinDate.getTime())) {
-        if (joinDate > endOfMonth) return; // join date after this month -> nothing to seed
-        if (joinDate > startOfMonth) startOfMonth.setTime(joinDate.getTime());
-      }
+    if (!req.body) month = undefined;
+    else if (typeof req.body === 'string') {
+      // client sent a raw string like "2025-10"
+      month = req.body;
+    } else if (typeof req.body === 'object') {
+      month = (req.body as any).month;
+    }
+    if (!month) {
+      const d = new Date();
+      month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
     }
 
-    const attRepository = attRepo; // use existing repo
-    const cur = new Date(startOfMonth);
-    while (cur <= endOfMonth) {
-      const dStr = cur.toISOString().split('T')[0];
-      const existing = await attRepository.findOneBy({ employeeId, date: dStr } as any);
-      if (!existing) {
-        const rec = attRepository.create({
-          id: uuidv4(),
-          employeeId,
-          date: dStr,
-          status: 'Present'
-        });
-        try {
-          await attRepository.save(rec);
-        } catch (e) {
-          // ignore save errors (race/unique conflicts)
-          console.warn('backfill save failed', employeeId, dStr, e);
+    month = String(month).trim();
+
+    async function backfillAttendanceForMonth(employeeId: string, monthStr: string, joinDateStr?: string) {
+      const parts = (monthStr || '').split('-');
+      if (parts.length < 2) return;
+      const year = Number(parts[0]);
+      const monthIndex = Number(parts[1]) - 1;
+      if (!year || isNaN(monthIndex)) return;
+
+      const startOfMonth = new Date(year, monthIndex, 1);
+      let endOfMonth = new Date(year, monthIndex + 1, 0); // last day of month
+
+      const today = new Date();
+      if (endOfMonth > today) endOfMonth = today; // don't backfill future days
+
+      // if joinDate is provided and is after startOfMonth, adjust start
+      if (joinDateStr) {
+        const joinDate = new Date(joinDateStr);
+        if (!isNaN(joinDate.getTime())) {
+          if (joinDate > endOfMonth) return; // join date after this month -> nothing to seed
+          if (joinDate > startOfMonth) startOfMonth.setTime(joinDate.getTime());
         }
       }
-      cur.setDate(cur.getDate() + 1);
-    }
-  }
 
-  try {
-    await backfillAttendanceForMonth(employeeId, month, emp.joinDate);
-  } catch (err) {
-    console.warn('Backfill attendance failed', err);
-  }
+      const attRepository = attRepo; // use existing repo
+      const cur = new Date(startOfMonth);
+      while (cur <= endOfMonth) {
+        const dStr = cur.toISOString().split('T')[0];
+        const existing = await attRepository.findOneBy({ employeeId, date: dStr } as any);
+        if (!existing) {
+          const rec = attRepository.create({
+            id: uuidv4(),
+            employeeId,
+            date: dStr,
+            status: 'Present'
+          });
+          try {
+            await attRepository.save(rec);
+          } catch (e) {
+            // ignore save errors (race/unique conflicts)
+            console.warn('backfill save failed', employeeId, dStr, e);
+          }
+        }
+        cur.setDate(cur.getDate() + 1);
+      }
+    }
+
+    try {
+      await backfillAttendanceForMonth(employeeId, month, emp.joinDate);
+    } catch (err) {
+      console.warn('Backfill attendance failed', err);
+    }
 
     const [yearStr, monthStr] = month.split('-');
     const year = Number(yearStr);
@@ -315,11 +317,13 @@ if (!month) {
 
     const calc = (amount?: number) => Math.round(((amount ?? 0) / totalDaysInMonth) * paidDays);
 
+
     const basic = calc(emp.basicSalary);
     const hra = calc(emp.hra);
     const da = calc(emp.da);
     const specialAllowance = calc(emp.specialAllowance);
     const gross = basic + hra + da + specialAllowance;
+    const monthlyGrossSalary = emp.monthlyGrossSalary ?? gross;
     const pf = Math.round(basic * PF_RATE);
     const esi = gross < ESI_WAGE_LIMIT ? Math.ceil(gross * ESI_EMPLOYEE_RATE) : 0;
     const pt = PROFESSIONAL_TAX;
@@ -335,6 +339,7 @@ if (!month) {
       year,
       generatedDate: new Date().toISOString(),
       attendancePercentage,
+      monthlyGrossSalary,
       earnings: { basic, hra, da, specialAllowance, gross },
       deductions: { pf, esi, pt, tax, totalDeductions },
       netSalary,
@@ -409,6 +414,26 @@ if (!month) {
     }
     return res.json(Array.from(map.values()));
   });
+
+  router.get('/me', async (req, res) => {
+    const user = (req as any).user;
+    if (!user) return res.status(401).json({ message: 'Unauthorized' });
+
+    const rows = await payslipRepo.find({
+      where: { employeeId: user.employeeId },
+      order: { generatedDate: 'DESC' }
+    });
+
+    const parsed = rows.map(r => {
+      const payload = JSON.parse(r.data);
+      payload.id = r.id;
+      payload.generatedDate = r.generatedDate;
+      return payload;
+    });
+
+    res.json(parsed);
+  });
+
 
   return router;
 }

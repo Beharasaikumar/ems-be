@@ -3,8 +3,10 @@ import { DataSource } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
 import { Attendance } from '../entities/Attendance';
 import { Employee } from '../entities/Employee';
+import { User } from '../entities/User';
+import bcrypt from 'bcrypt';
 import { MissingDeleteDateColumnError } from 'typeorm/error/MissingDeleteDateColumnError';
-import { authRequired, requireRole } from '../middleware/auth';
+import { AuthRequest, authRequired, requireRole } from '../middleware/auth';
 
 
 async function seedAttendanceFromJoinDate(dataSource: DataSource, employeeId: string, joinDateStr?: string) {
@@ -40,6 +42,8 @@ async function seedAttendanceFromJoinDate(dataSource: DataSource, employeeId: st
 
 export default function employeesRouter(dataSource: DataSource) {
   const router = Router();
+
+  const userRepo = dataSource.getRepository(User);
   const repo = dataSource.getRepository(Employee);
 
   router.use(authRequired);
@@ -48,6 +52,18 @@ export default function employeesRouter(dataSource: DataSource) {
   //   console.log(`[Employees] ${req.method} ${req.originalUrl} - body:`, req.body || '<no body>');
   //   next();
   // });
+
+
+  router.get('/me', authRequired, async (req: AuthRequest, res) => {
+  if (req.user?.role !== 'employee') {
+    return res.status(403).json({ message: 'Not an employee' });
+  }
+
+  const emp = await repo.findOneBy({ id: req.user.employeeId! });
+  if (!emp) return res.status(404).json({ message: 'Employee not found' });
+
+  res.json(emp);
+});
 
 
   router.get('/', requireRole('admin'), async (req, res) => {
@@ -84,9 +100,31 @@ export default function employeesRouter(dataSource: DataSource) {
     if (rest.da !== undefined) rest.da = Number(rest.da);
     if (rest.specialAllowance !== undefined) rest.specialAllowance = Number(rest.specialAllowance);
 
-    const e = repo.create(rest as Employee);
+    const e = repo.create({
+      ...rest,
+      appRole: 'employee'
+    } as Employee);
     await repo.save(e);
+    const existingUser = await userRepo.findOne({
+      where: [{ username: e.id }, { email: e.email }]
+    });
 
+    if (!existingUser && e.email) {
+      const tempPassword = await bcrypt.hash(
+        Math.random().toString(36),
+        10
+      );
+
+      const user = userRepo.create({
+        employeeId: e.id,              // 🔑 SAME ID AS EMPLOYEE
+        username: e.id,        // login using employee ID
+        email: e.email,
+        password: tempPassword,
+        role: 'employee'
+      });
+
+      await userRepo.save(user);
+    }
     try {
       await seedAttendanceFromJoinDate(dataSource, e.id, e.joinDate);
     } catch (err) {
@@ -118,13 +156,13 @@ export default function employeesRouter(dataSource: DataSource) {
     await repo.update({ id }, updateBody);
     const updated = await repo.findOneBy({ id });
     if (updated) {
-  try {
-    const newJoin = (updateBody.joinDate ?? updated.joinDate) as string | undefined;
-    await seedAttendanceFromJoinDate(dataSource, id, newJoin);
-  } catch (err) {
-    console.warn('Attendance seeding on update failed', err);
-  }
-}
+      try {
+        const newJoin = (updateBody.joinDate ?? updated.joinDate) as string | undefined;
+        await seedAttendanceFromJoinDate(dataSource, id, newJoin);
+      } catch (err) {
+        console.warn('Attendance seeding on update failed', err);
+      }
+    }
     res.json(updated);
   });
 
@@ -132,12 +170,12 @@ export default function employeesRouter(dataSource: DataSource) {
     const id = req.params.id;
     try {
       await repo.softDelete(id);
-       await dataSource.getRepository(Attendance).delete({ employeeId: id });
+      await dataSource.getRepository(Attendance).delete({ employeeId: id });
       return res.json({ ok: true, softDeleted: true, attendanceDeleted: true });
     } catch (err: any) {
       if (err?.name === 'MissingDeleteDateColumnError' || err instanceof MissingDeleteDateColumnError) {
         await repo.delete({ id } as any);
-         await dataSource.getRepository(Attendance).delete({ employeeId: id });
+        await dataSource.getRepository(Attendance).delete({ employeeId: id });
         return res.json({ ok: true, softDeleted: false, fallback: 'hard-delete', attendanceDeleted: true });
       }
       console.error('Delete failed', err);
@@ -145,5 +183,6 @@ export default function employeesRouter(dataSource: DataSource) {
     }
 
   });
+
   return router;
 }

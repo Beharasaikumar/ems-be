@@ -3,7 +3,14 @@ import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 dotenv.config();
 
-export type AuthRequest = Request & { user?: { id: string; username?: string; role?: string } };
+export type AuthRequest = Request & { 
+  user?: { 
+    id: string; 
+    role: 'admin' | 'employee';
+    employeeId?: string | null; 
+    username: string;
+  } 
+};
 
 const JWT_SECRET = process.env.JWT_SECRET ?? 'replace-with-secure-secret';
 
@@ -13,7 +20,7 @@ export function authRequired(req: AuthRequest, res: Response, next: NextFunction
   const token = auth.slice(7);
   try {
     const payload = jwt.verify(token, JWT_SECRET) as any;
-    req.user = { id: payload.id, username: payload.username, role: payload.role };
+    req.user = payload;
     next();
   } catch (err) {
     return res.status(401).json({ message: 'Invalid token' });

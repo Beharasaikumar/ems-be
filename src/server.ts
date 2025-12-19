@@ -12,6 +12,7 @@ import authRouter from './routes/auth';
 import employeesRouter from './routes/employee';
 import attendanceRouter from './routes/attendance';
 import payrollRouter from './routes/payroll';
+import leaveRouter from './routes/leave';
 
 async function main() {
   const app = express();
@@ -35,6 +36,7 @@ async function main() {
   app.use('/api/employees', employeesRouter(AppDataSource));
   app.use('/api/attendance', attendanceRouter(AppDataSource));
   app.use('/api/payroll', payrollRouter(AppDataSource));
+  app.use('/api/leaves', leaveRouter(AppDataSource));
 
   const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
   app.listen(PORT, () => console.log(`Server listening at http://localhost:${PORT}`));

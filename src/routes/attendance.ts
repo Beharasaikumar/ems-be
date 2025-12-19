@@ -73,5 +73,20 @@ router.get('/', async (req, res) => {
     res.json(record);
   });
 
+ router.get('/me', async (req, res) => {
+  const user = (req as any).user;
+   if (!user?.employeeId) {
+    return res.status(400).json({ message: 'employeeId missing' });
+  }
+   
+  const rows = await repo.find({
+    where: { employeeId: user.employeeId },
+    order: { date: 'DESC' }
+  });
+
+  res.json(rows);
+});
+
+
   return router;
 }
