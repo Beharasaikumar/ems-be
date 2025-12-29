@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import express from 'express';
 import cors from 'cors';
-import AppDataSource from './ormconfig'; 
+import AppDataSource from './ormconfig';
 import dotenv from 'dotenv';
 import path from 'path';
 
@@ -18,28 +18,30 @@ async function main() {
   const app = express();
   app.use(cors({
     origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-    credentials: true
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   }));
   app.use(express.json());
 
-   await AppDataSource.initialize();
+  await AppDataSource.initialize();
   console.log('DB initialized');
 
-   if (process.env.RUN_MIGRATIONS_ON_START === 'true') {
+  if (process.env.RUN_MIGRATIONS_ON_START === 'true') {
     console.log('Running migrations...');
     await AppDataSource.runMigrations();
     console.log('Migrations complete');
   }
 
-  
-   app.use('/api/auth', authRouter(AppDataSource));
+
+  app.use('/api/auth', authRouter(AppDataSource));
   app.use('/api/employees', employeesRouter(AppDataSource));
   app.use('/api/attendance', attendanceRouter(AppDataSource));
   app.use('/api/payroll', payrollRouter(AppDataSource));
   app.use('/api/leaves', leaveRouter(AppDataSource));
 
   const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
-  app.listen(PORT, () => console.log(`Server listening at http://localhost:${PORT}`));
+  app.listen(PORT, "0.0.0.0", () => console.log(`Server listening at http://localhost:${PORT}`));
 }
 
 main().catch((err) => {

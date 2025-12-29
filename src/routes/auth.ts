@@ -8,7 +8,7 @@ import { User } from '../entities/User';
 import { PasswordResetToken } from '../entities/PasswordResetToken';
 import { AuthRequest, authRequired } from '../middleware/auth';
  
-const JWT_SECRET = process.env.JWT_SECRET || 'replace-with-secure-secret';
+const JWT_SECRET = process.env.JWT_SECRET || 'verylongrandomsecretkeythatnobodycanguess123456';
 
 export default function authRouter(dataSource: DataSource) {
   const router = Router();
@@ -33,6 +33,7 @@ export default function authRouter(dataSource: DataSource) {
   // });
 
    router.post('/login', async (req, res) => {
+    try {
     const { username, password } = req.body;
 
     const user = await userRepo.findOne({ where: { username } });
@@ -48,6 +49,10 @@ export default function authRouter(dataSource: DataSource) {
     );
 
     res.json({ ok: true, token, user });
+      } catch (err) {
+    console.error("LOGIN ERROR:", err);
+    return res.status(500).json({ message: "Server error during login" });
+  }
   });
 
    router.post('/forgot-password', async (req, res) => {

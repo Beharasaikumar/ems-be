@@ -12,7 +12,7 @@ export type AuthRequest = Request & {
   } 
 };
 
-const JWT_SECRET = process.env.JWT_SECRET ?? 'replace-with-secure-secret';
+const JWT_SECRET = process.env.JWT_SECRET ?? 'verylongrandomsecretkeythatnobodycanguess123456';
 
 export function authRequired(req: AuthRequest, res: Response, next: NextFunction) {
   const auth = req.headers.authorization;

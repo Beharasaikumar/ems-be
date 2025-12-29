@@ -10,7 +10,7 @@ export class AddPayslipsTable1680000000001 implements MigrationInterface {
         "employee_id" TEXT NOT NULL,
         "month" TEXT NOT NULL,
         "year" INTEGER,
-        "generated_date" timestamp/datetime,
+        "generated_date" TIMESTAMP,
         "data" TEXT
       );
     `);
