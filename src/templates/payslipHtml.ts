@@ -292,8 +292,8 @@ export function buildPayslipHtml(payload: any, logoUrl?: string) {
           </div>
 
           <div class="deductions-col">
-            <div class="deduction-row" style="justify-content:space-between;"><div>PF (12%)</div><div>${fmt(payload.deductions.pf)}</div></div>
-            <div class="deduction-row" style="justify-content:space-between;"><div>ESI (0.75%)</div><div>${fmt(payload.deductions.esi)}</div></div>
+            <div class="deduction-row" style="justify-content:space-between;"><div>PF</div><div>${fmt(payload.deductions.pf)}</div></div>
+            <div class="deduction-row" style="justify-content:space-between;"><div>ESI</div><div>${fmt(payload.deductions.esi)}</div></div>
             <div class="deduction-row" style="justify-content:space-between;"><div>Prof. Tax</div><div>${fmt(payload.deductions.pt)}</div></div>
             <div class="deduction-row" style="justify-content:space-between;"><div>TDS</div><div>${fmt(payload.deductions.tax)}</div></div>
           </div>
