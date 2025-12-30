@@ -21,9 +21,9 @@ export class CreateInitialTables1680000000000 implements MigrationInterface {
         pfAccountNumber TEXT,
         esiNumber TEXT,
         appRole TEXT DEFAULT 'employee',
-        createdAt TIMESTAMPTZ DEFAULT NOW(),
-        updatedAt TIMESTAMPTZ DEFAULT NOW(),
-        deletedAt TIMESTAMPTZ
+        createdat TIMESTAMPTZ DEFAULT NOW(),
+        updatedat TIMESTAMPTZ DEFAULT NOW(),
+        deletedat TIMESTAMPTZ
       );
     `);
 

@@ -63,12 +63,12 @@ export class Employee {
   @Column({ name: 'approle', default: 'employee' })
   appRole!: 'employee' | 'admin';
 
-  @CreateDateColumn({ type: 'timestamptz', nullable: true })
+  @CreateDateColumn({ name: 'createdat', type: 'timestamptz', nullable: true })
   createdAt?: Date;
 
-  @UpdateDateColumn({ type: 'timestamptz', nullable: true })
+  @UpdateDateColumn({ name: 'updatedat', type: 'timestamptz', nullable: true })
   updatedAt?: Date;
 
-  @DeleteDateColumn({ type: 'timestamptz', nullable: true })
+  @DeleteDateColumn({ name: 'deletedat', type: 'timestamptz', nullable: true })
   deletedAt?: Date;
 }

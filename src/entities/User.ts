@@ -27,10 +27,10 @@ export class User {
   @Column({ nullable: true, unique: true })
   employeeId?: string;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'createdAt' })
   createdAt!: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ name: 'updatedAt' })
   updatedAt!: Date;
 
 }
