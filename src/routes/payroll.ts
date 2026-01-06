@@ -180,8 +180,8 @@ export default function payrollRouter(dataSource: DataSource) {
 
       const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
       const smtpPort = Number(process.env.SMTP_PORT ?? 465);
-      const smtpUser = process.env.SMTP_USER || 'beharasaikumar1@gmail.com';
-      const smtpPass = process.env.SMTP_PASS || 'ailsfwlwfxihzbwz';
+      const smtpUser = process.env.SMTP_USER || 'hr@lomaait.com';
+      const smtpPass = process.env.SMTP_PASS || '';
 
       if (!smtpHost || !smtpUser || !smtpPass) {
         return res.status(503).json({
@@ -312,6 +312,8 @@ export default function payrollRouter(dataSource: DataSource) {
       });
     }
 
+    
+
     paidDays = Math.min(paidDays, totalDaysInMonth);
     const attendancePercentage = (paidDays / totalDaysInMonth) * 100;
 
@@ -328,7 +330,9 @@ export default function payrollRouter(dataSource: DataSource) {
     const esi = gross < ESI_WAGE_LIMIT ? Math.ceil(gross * ESI_EMPLOYEE_RATE) : 0;
     const pt = PROFESSIONAL_TAX;
     const tax = gross > 50000 ? Math.round((gross - 50000) * 0.1) : 0;
-    const totalDeductions = pf + esi + pt + tax;
+    const emergencyAdvance = Number(req.body.emergencyAdvance ?? 0);
+    const advanceRecovery = Number(req.body.advanceRecovery ?? 0);
+    const totalDeductions = pf + esi + pt + tax + emergencyAdvance + advanceRecovery;
     const netSalary = gross - totalDeductions;
 
     const payload = {
@@ -341,10 +345,26 @@ export default function payrollRouter(dataSource: DataSource) {
       attendancePercentage,
       monthlyGrossSalary,
       earnings: { basic, hra, da, specialAllowance, gross },
-      deductions: { pf, esi, pt, tax, totalDeductions },
+      deductions: { pf, esi, pt, tax, emergencyAdvance, advanceRecovery, totalDeductions },
       netSalary,
       remarks: `Auto-generated (${month})` || 'Thank you for your contribution this month.'
     };
+
+    const payslipexisting = await payslipRepo.findOne({
+  where: { employeeId, month }
+});
+
+if (payslipexisting) {
+   payslipexisting.data = JSON.stringify(payload);
+
+   payslipexisting.emergencyAdvance = emergencyAdvance;
+  payslipexisting.advanceRecovery = advanceRecovery;
+  payslipexisting.generatedDate = payload.generatedDate;
+
+  await payslipRepo.save(payslipexisting);
+
+   return res.json(payload);
+}
 
     const p = payslipRepo.create({
       id: payload.id,
@@ -352,6 +372,8 @@ export default function payrollRouter(dataSource: DataSource) {
       month: payload.month,
       year: payload.year,
       generatedDate: payload.generatedDate,
+      emergencyAdvance,
+      advanceRecovery,
       data: JSON.stringify(payload)
     });
     await payslipRepo.save(p);

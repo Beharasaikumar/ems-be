@@ -9,7 +9,7 @@ export class Payslip {
   employeeId!: string;
 
   @Column({ name: 'month' })
-  month!: string; // YYYY-MM
+  month!: string;
 
   @Column({ name: 'year' })
   year!: number;
@@ -17,6 +17,12 @@ export class Payslip {
   @Column({ name: 'generated_date' })
   generatedDate!: string;
 
+  @Column({ name: 'emergency_advance', type: 'integer', default: 0 })
+  emergencyAdvance!: number;
+
+  @Column({ name: 'advance_recovery', type: 'integer', default: 0 })
+  advanceRecovery!: number;
+
   @Column({ type: 'text' })
-  data!: string; // JSON string
+  data!: string; 
 }

@@ -81,13 +81,13 @@ export default function authRouter(dataSource: DataSource) {
       port: Number(process.env.SMTP_PORT || 465), 
       secure: true, 
       auth: { 
-        user: process.env.SMTP_USER || 'beharasaikumar1@gmail.com', 
-        pass: process.env.SMTP_PASS || 'ailsfwlwfxihzbwz' 
+        user: process.env.SMTP_USER || 'hr@lomaait.com', 
+        pass: process.env.SMTP_PASS || '' 
       } 
     });
 
     await mailer.sendMail({
-      from: process.env.SMTP_USER || 'beharasaikumar1@gmail.com' ,
+      from: process.env.SMTP_USER || 'hr@lomaait.com' ,
       to: user.email,
       subject: 'Reset Your Password',
       html: `

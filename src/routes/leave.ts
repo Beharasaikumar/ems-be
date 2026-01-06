@@ -36,6 +36,18 @@ export default function leaveRouter(dataSource: DataSource) {
 
 
     router.get('/me', async (req: AuthRequest, res) => {
+
+        const today = new Date().toISOString().split("T")[0];
+
+        await repo
+            .createQueryBuilder()
+            .update(LeaveRequest)
+            .set({ status: "Rejected", decidedOn: new Date() })
+            .where("status = :status", { status: "Pending" })
+            .andWhere("endDate < :today", { today })
+            .andWhere("employeeId = :emp", { emp: req.user!.employeeId! })
+            .execute();
+
         const leaves = await repo.find({
             where: { employeeId: req.user!.employeeId! },
             order: { appliedOn: 'DESC' }
@@ -44,7 +56,44 @@ export default function leaveRouter(dataSource: DataSource) {
     });
 
 
-    router.get('/', requireRole('admin'), async (_req, res) => {
+    router.get('/', requireRole('admin'), async (req, res) => {
+
+        const { search, status, from, to } = req.query;
+
+        const today = new Date().toISOString().split("T")[0];
+
+        await repo
+            .createQueryBuilder()
+            .update(LeaveRequest)
+            .set({ status: "Rejected", decidedOn: new Date() })
+            .where("status = :status", { status: "Pending" })
+            .andWhere("endDate < :today", { today })
+            .execute();
+
+        let qb = repo.createQueryBuilder("leave");
+
+        if (status) {
+            qb = qb.andWhere("leave.status = :status", { status });
+        }
+
+        if (search) {
+            qb = qb.andWhere(
+                "(leave.employeeId ILIKE :s OR leave.type ILIKE :s)",
+                { s: `%${search}%` }
+            );
+        }
+
+        if (from && to) {
+            qb = qb.andWhere(
+                "leave.startDate >= :from AND leave.endDate <= :to",
+                { from, to }
+            );
+        }
+
+        qb = qb.orderBy("leave.appliedOn", "DESC");
+
+        const results = await qb.getMany();
+
         const leaves = await repo.find({ order: { appliedOn: 'DESC' } });
         res.json(leaves);
     });

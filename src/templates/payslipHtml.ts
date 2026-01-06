@@ -296,6 +296,20 @@ export function buildPayslipHtml(payload: any, logoUrl?: string) {
             <div class="deduction-row" style="justify-content:space-between;"><div>ESI</div><div>${fmt(payload.deductions.esi)}</div></div>
             <div class="deduction-row" style="justify-content:space-between;"><div>Prof. Tax</div><div>${fmt(payload.deductions.pt)}</div></div>
             <div class="deduction-row" style="justify-content:space-between;"><div>TDS</div><div>${fmt(payload.deductions.tax)}</div></div>
+            ${payload.deductions.emergencyAdvance ? `
+  <div class="deduction-row">
+    <div>Emergency Advance</div>
+    <div>${fmt(payload.deductions.emergencyAdvance)}</div>
+  </div>
+` : ''}
+
+${payload.deductions.advanceRecovery ? `
+  <div class="deduction-row" style="color:#dc2626;font-weight:700;">
+    <div>Salary Advance Recovery</div>
+    <div>${fmt(payload.deductions.advanceRecovery)}</div>
+  </div>
+` : ''}
+
           </div>
         </div>
 
