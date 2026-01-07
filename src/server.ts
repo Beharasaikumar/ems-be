@@ -5,7 +5,7 @@ import AppDataSource from './ormconfig';
 import dotenv from 'dotenv';
 import path from 'path';
 
-dotenv.config({ path: path.resolve(process.cwd(), './.env') });
+dotenv.config({ path: path.resolve(process.cwd(), './src/.env') });
 
 
 import authRouter from './routes/auth';
