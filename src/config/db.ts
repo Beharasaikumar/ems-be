@@ -1,7 +1,7 @@
  import 'reflect-metadata';
 import { DataSource } from 'typeorm';
 import * as dotenv from 'dotenv';
-dotenv.config();
+dotenv.config({ path: './src/.env' });
 
 const isSqlite = process.env.DB_TYPE === 'sqlite';
 
