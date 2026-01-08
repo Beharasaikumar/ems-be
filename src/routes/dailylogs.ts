@@ -7,7 +7,7 @@ export default function dailyLogRouter(dataSource: DataSource) {
   const repo = dataSource.getRepository(DailyLog);
   const router = Router();
 
-  // Get all logs (admin only)
+
   router.get('/', authRequired, async (req: AuthRequest, res) => {
     if (req.user?.role !== 'admin')
       return res.status(403).json({ message: 'Admins only' });
@@ -19,7 +19,7 @@ export default function dailyLogRouter(dataSource: DataSource) {
     res.json(logs);
   });
 
-  // Create new log
+
   router.post('/', authRequired, async (req: AuthRequest, res) => {
     const { title, content, category } = req.body;
 
@@ -34,14 +34,14 @@ export default function dailyLogRouter(dataSource: DataSource) {
     res.json(log);
   });
 
-  // Toggle pin
+ 
   router.put('/:id/pin', authRequired, async (req: AuthRequest, res) => {
     const { isPinned } = req.body;
     await repo.update(req.params.id, { isPinned });
     res.json(await repo.findOneBy({ id: req.params.id }));
   });
 
-  // Delete
+ 
   router.delete('/:id', authRequired, async (req: AuthRequest, res) => {
     await repo.delete(req.params.id);
     res.json({ ok: true });

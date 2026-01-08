@@ -7,7 +7,7 @@ export default function billRouter(dataSource: DataSource) {
   const router = Router();
   const repo = dataSource.getRepository(Bill);
 
-  // create bill
+
   router.post('/', authRequired, async (req: AuthRequest, res) => {
     const { title, amount, category, billDate, fileName, fileData } = req.body;
 
@@ -26,8 +26,7 @@ export default function billRouter(dataSource: DataSource) {
     res.json(bill);
   });
 
-  // list bills (admin sees all / employee sees own)
-  router.get('/', authRequired, async (req: AuthRequest, res) => {
+   router.get('/', authRequired, async (req: AuthRequest, res) => {
     let bills;
 
     if (req.user?.role === 'admin') {
@@ -42,8 +41,7 @@ export default function billRouter(dataSource: DataSource) {
     res.json(bills);
   });
 
-  // update status (admin only)
-  router.put('/:id/status', authRequired, async (req: AuthRequest, res) => {
+   router.put('/:id/status', authRequired, async (req: AuthRequest, res) => {
     if (req.user?.role !== 'admin') {
       return res.status(403).json({ message: 'Admins only' });
     }
@@ -56,8 +54,7 @@ export default function billRouter(dataSource: DataSource) {
     res.json(updated);
   });
 
-  // delete bill
-  router.delete('/:id', authRequired, async (req: AuthRequest, res) => {
+   router.delete('/:id', authRequired, async (req: AuthRequest, res) => {
     await repo.delete(req.params.id);
     res.json({ ok: true });
   });
