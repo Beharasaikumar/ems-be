@@ -104,7 +104,9 @@ export default function payrollRouter(dataSource: DataSource) {
       const pdfBuffer = await page.pdf({
         format: 'A4',
         printBackground: true,
-        margin: { top: '20mm', bottom: '20mm', left: '12mm', right: '12mm' },
+        margin: { top: '16mm', bottom: '16mm', left: '12mm', right: '12mm' },
+        preferCSSPageSize: true,
+  scale: 0.95 
       });
 
 
@@ -172,7 +174,9 @@ export default function payrollRouter(dataSource: DataSource) {
       const pdfUint8 = await page.pdf({
         format: 'A4',
         printBackground: true,
-        margin: { top: '20mm', bottom: '20mm', left: '12mm', right: '12mm' },
+        margin: { top: '16mm', bottom: '16mm', left: '12mm', right: '12mm' },
+        preferCSSPageSize: true,
+  scale: 0.95 
       });
       const pdfBuffer = Buffer.from(pdfUint8);
 

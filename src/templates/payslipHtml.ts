@@ -211,10 +211,26 @@ export function buildPayslipHtml(payload: any, logoUrl?: string) {
         body { background: #fff; padding:0; }
         #printable-area { box-shadow:none; border:none; margin:0; padding:18px; }
       }
+
+      @page {
+    size: A4;
+    margin: 16mm;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+  }
+
+  .payslip {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
     </style>
   </head>
   <body>
-    <div id="printable-area">
+    <div id="printable-area" class="payslip">
       <div class="header">
       
           <div class="logo-wrap" aria-hidden="true">
