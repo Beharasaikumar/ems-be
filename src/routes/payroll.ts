@@ -16,7 +16,7 @@ import { buildPayslipHtml, escapeHtml } from '../templates/payslipHtml';
 import * as dotenv from 'dotenv';
 dotenv.config();
 
-const PF_RATE = 0.12;
+const PF_RATE = 0.24;
 const ESI_EMPLOYEE_RATE = 0.0075;
 const ESI_WAGE_LIMIT = 21000;
 const PROFESSIONAL_TAX = 200;
