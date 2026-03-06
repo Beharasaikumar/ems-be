@@ -336,8 +336,14 @@ export default function payrollRouter(dataSource: DataSource) {
     const specialAllowance = calc(emp.specialAllowance);
     const gross = basic + hra + da + specialAllowance;
     const monthlyGrossSalary = emp.monthlyGrossSalary ?? gross;
-    const pf = Math.round(basic * PF_RATE);
-    const esi = gross < ESI_WAGE_LIMIT ? Math.ceil(gross * ESI_EMPLOYEE_RATE) : 0;
+    const pf =
+      emp.pfEnabled
+        ? Math.round(basic * PF_RATE)
+        : 0;
+    const esi =
+      emp.esiEnabled && gross < ESI_WAGE_LIMIT
+        ? Math.ceil(gross * ESI_EMPLOYEE_RATE)
+        : 0;
     const pt = PROFESSIONAL_TAX;
     const tax = gross > 50000 ? Math.round((gross - 50000) * 0.1) : 0;
     const emergencyAdvance = Number(req.body.emergencyAdvance ?? 0);
@@ -358,7 +364,7 @@ export default function payrollRouter(dataSource: DataSource) {
       earnings: { basic, hra, da, specialAllowance, gross },
       deductions: { pf, esi, pt, tax, emergencyAdvance, advanceRecovery, totalDeductions },
       netSalary,
-      remarks: `Auto-generated (${month})` || 'Thank you for your contribution this month.'
+      remarks: 'Thank you for your contribution this month.'
     };
 
     const payslipexisting = await payslipRepo.findOne({

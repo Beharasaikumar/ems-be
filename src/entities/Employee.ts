@@ -60,6 +60,12 @@ export class Employee {
   @Column({ name: 'esinumber', nullable: true })
   esiNumber?: string;
 
+  @Column({ name: 'esienabled', default: true })
+  esiEnabled!: boolean;
+
+  @Column({ name: 'pfenabled', default: true })
+  pfEnabled!: boolean;
+
   @Column({ name: 'approle', default: 'employee' })
   appRole!: 'employee' | 'admin';
 

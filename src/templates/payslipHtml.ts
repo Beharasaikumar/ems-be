@@ -384,7 +384,7 @@ ${payload.deductions.advanceRecovery ? `
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zM10 14l6-6" stroke="#92400e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
             HR Remarks
           </div>
-          <div class="quote">"${escapeHtml(payload.remarks ?? emp.remarks ?? '')}"</div>
+          <div class="quote">"Thank you for your contribution this month."</div>
         </div>
       ` : ''}
 
