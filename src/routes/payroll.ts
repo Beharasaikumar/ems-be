@@ -106,7 +106,7 @@ export default function payrollRouter(dataSource: DataSource) {
         printBackground: true,
         margin: { top: '16mm', bottom: '16mm', left: '12mm', right: '12mm' },
         preferCSSPageSize: true,
-  scale: 0.95 
+        scale: 0.95
       });
 
 
@@ -176,7 +176,7 @@ export default function payrollRouter(dataSource: DataSource) {
         printBackground: true,
         margin: { top: '16mm', bottom: '16mm', left: '12mm', right: '12mm' },
         preferCSSPageSize: true,
-  scale: 0.95 
+        scale: 0.95
       });
       const pdfBuffer = Buffer.from(pdfUint8);
 
@@ -300,15 +300,21 @@ export default function payrollRouter(dataSource: DataSource) {
     const monthIndex = Number(monthStr) - 1;
     const totalDaysInMonth = new Date(year, monthIndex + 1, 0).getDate();
 
-    const monthRecords = await attRepo.find({ where: { employeeId } });
-    const filtered = monthRecords.filter(r => r.date.startsWith(month));
-
+    // const monthRecords = await attRepo.find({ where: { employeeId } });
+    const filtered = await attRepo
+      .createQueryBuilder("attendance")
+      .where("attendance.employeeId = :employeeId", { employeeId })
+      .andWhere("attendance.date LIKE :month", { month: `${month}%` })
+      .getMany();
     let paidDays = 0;
+    let absentDays = 0;
+
     if (filtered.length > 0) {
       for (const r of filtered) {
         if (r.status === 'Present') paidDays += 1;
         else if (r.status === 'Leave') paidDays += 1;
         else if (r.status === 'Half Day') paidDays += 0.5;
+        else if (r.status === 'Absent') absentDays += 1;
       }
     } else {
       return res.status(400).json({
@@ -316,7 +322,7 @@ export default function payrollRouter(dataSource: DataSource) {
       });
     }
 
-    
+
 
     paidDays = Math.min(paidDays, totalDaysInMonth);
     const attendancePercentage = (paidDays / totalDaysInMonth) * 100;
@@ -347,6 +353,7 @@ export default function payrollRouter(dataSource: DataSource) {
       year,
       generatedDate: new Date().toISOString(),
       attendancePercentage,
+      absentDays,
       monthlyGrossSalary,
       earnings: { basic, hra, da, specialAllowance, gross },
       deductions: { pf, esi, pt, tax, emergencyAdvance, advanceRecovery, totalDeductions },
@@ -355,20 +362,20 @@ export default function payrollRouter(dataSource: DataSource) {
     };
 
     const payslipexisting = await payslipRepo.findOne({
-  where: { employeeId, month }
-});
+      where: { employeeId, month }
+    });
 
-if (payslipexisting) {
-   payslipexisting.data = JSON.stringify(payload);
+    if (payslipexisting) {
+      payslipexisting.data = JSON.stringify(payload);
 
-   payslipexisting.emergencyAdvance = emergencyAdvance;
-  payslipexisting.advanceRecovery = advanceRecovery;
-  payslipexisting.generatedDate = payload.generatedDate;
+      payslipexisting.emergencyAdvance = emergencyAdvance;
+      payslipexisting.advanceRecovery = advanceRecovery;
+      payslipexisting.generatedDate = payload.generatedDate;
 
-  await payslipRepo.save(payslipexisting);
+      await payslipRepo.save(payslipexisting);
 
-   return res.json(payload);
-}
+      return res.json(payload);
+    }
 
     const p = payslipRepo.create({
       id: payload.id,

@@ -7,12 +7,40 @@ export function escapeHtml(s: any) {
 }
 
 export function buildPayslipHtml(payload: any, logoUrl?: string) {
+
   const monthLabel = payload.month ?? '';
   const emp = payload.employee ?? {};
-  const fmt = (n: any) => `₹${Number(n ?? 0).toLocaleString('en-IN')}`;
-  const daysPresent = Math.round(((emp.attendancePercentage ?? payload.attendancePercentage ?? 0) / 100) * 30);
-  const grossMonthly = payload.monthlyGrossSalary ?? payload.earnings?.gross ?? 0;
 
+  const fmt = (n: any) => `₹${Number(n ?? 0).toLocaleString('en-IN')}`;
+
+
+const monthStr = payload.month ?? '';
+const year = payload.year ?? new Date().getFullYear();
+
+const month = parseInt(String(monthStr).split('-')[1] ?? '1', 10);
+
+const today = new Date();
+const currentMonth = today.getMonth() + 1;
+const currentYear = today.getFullYear();
+
+// working days only till today if current month
+let workingDays = new Date(year, month, 0).getDate();
+
+if (year === currentYear && month === currentMonth) {
+  workingDays = today.getDate();
+}
+
+// assume all present unless absent recorded
+const absentDays =
+  emp?.absentDays ??
+  payload?.absentDays ??
+  0;
+
+// final LOP
+const lopDays = absentDays;
+
+  const grossMonthly =
+    payload.monthlyGrossSalary ?? payload.earnings?.gross ?? 0;
 
   const logoHtml = logoUrl
     ? `<div class="logo-container" aria-hidden="true" style="position:relative;width:200px;height:80px;flex:0 0 40px; align-items:center;justify-content:center;display:inline-flex;">
@@ -279,8 +307,8 @@ export function buildPayslipHtml(payload: any, logoUrl?: string) {
         </div>
 
         <div class="field text-right">
-          <div class="label">Days Present</div>
-          <div class="value">${daysPresent} days</div>
+          <div class="label">LOP Days</div>
+          <div class="value">${lopDays} days</div>
         </div>
       </div>
 
