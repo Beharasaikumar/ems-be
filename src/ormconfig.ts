@@ -1,26 +1,31 @@
-// src/data-source.ts
 import 'reflect-metadata';
 import { DataSource } from 'typeorm';
 import * as dotenv from 'dotenv';
-dotenv.config({ path: './src/.env' });
+import path from 'path';
 
-const isSqlite = process.env.DB_TYPE === 'sqlite';
+/**
+ * Load environment variables from root .env
+ */
+dotenv.config({
+  path: path.resolve(process.cwd(), '.env'),
+});
 
 const AppDataSource = new DataSource({
-  type: isSqlite ? 'sqlite' : 'postgres',
-  ...(isSqlite
-    ? { database: process.env.SQLITE_FILE ?? 'lomaa.db' }
-    : {
-      host: process.env.DB_HOST ?? 'localhost',
-      port: Number(process.env.DB_PORT ?? 5432),
-      username: process.env.DB_USER ?? 'postgres',
-      password: process.env.DB_PASS ?? 'your_postgres_password',
-      database: process.env.DB_NAME ?? 'lomaa_hr',
-    }),
-  synchronize: false, // keep false in prod; use migrations
+  type: 'postgres',
+
+  host: process.env.DB_HOST || 'localhost',
+  port: Number(process.env.DB_PORT || 5432),
+
+  username: process.env.DB_USER || 'postgres',
+  password: 'LomaaITSolutions@1234',
+
+  database: process.env.DB_NAME || 'ems_db',
+
+  synchronize: false,
   logging: false,
-  entities: [__dirname + '/entities/*.{ts,js}'],
-  migrations: [__dirname + '/migrations/*.{ts,js}'],
+
+  entities: [path.join(__dirname, 'entities', '*.{ts,js}')],
+  migrations: [path.join(__dirname, 'migrations', '*.{ts,js}')],
   subscribers: [],
 });
 
