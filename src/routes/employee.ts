@@ -55,15 +55,15 @@ export default function employeesRouter(dataSource: DataSource) {
 
 
   router.get('/me', authRequired, async (req: AuthRequest, res) => {
-    if (req.user?.role !== 'employee') {
-      return res.status(403).json({ message: 'Not an employee' });
-    }
+  if (req.user?.role !== 'employee') {
+    return res.status(403).json({ message: 'Not an employee' });
+  }
 
-    const emp = await repo.findOneBy({ id: req.user.employeeId! });
-    if (!emp) return res.status(404).json({ message: 'Employee not found' });
+  const emp = await repo.findOneBy({ id: req.user.employeeId! });
+  if (!emp) return res.status(404).json({ message: 'Employee not found' });
 
-    res.json(emp);
-  });
+  res.json(emp);
+});
 
 
   router.get('/', requireRole('admin'), async (req, res) => {
@@ -157,13 +157,13 @@ export default function employeesRouter(dataSource: DataSource) {
     const updated = await repo.findOneBy({ id });
 
     if (updateBody.email) {
-      const user = await userRepo.findOneBy({ employeeId: id });
+  const user = await userRepo.findOneBy({ employeeId: id });
 
-      if (user) {
-        user.email = updateBody.email;
-        await userRepo.save(user);
-      }
-    }
+  if (user) {
+    user.email = updateBody.email;
+    await userRepo.save(user);
+  }
+}
 
     if (updated) {
       try {
