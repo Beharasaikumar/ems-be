@@ -4,10 +4,10 @@ import * as dotenv from 'dotenv';
 import path from 'path';
 
 /**
- * Load environment variables from root .env
+ * Load environment variables from src/.env
  */
 dotenv.config({
-  path: path.resolve(process.cwd(), '.env'),
+  path: path.resolve(__dirname, '.env'),
 });
 
 const AppDataSource = new DataSource({
@@ -17,7 +17,7 @@ const AppDataSource = new DataSource({
   port: Number(process.env.DB_PORT || 5432),
 
   username: process.env.DB_USER || 'postgres',
-  password: 'LomaaITSolutions@1234',
+  password: process.env.DB_PASS || 'your_postgres_password',
 
   database: process.env.DB_NAME || 'ems_db',
 

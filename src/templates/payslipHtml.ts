@@ -6,7 +6,7 @@ export function escapeHtml(s: any) {
     .replace(/>/g, '&gt;');
 }
 
-export function buildPayslipHtml(payload: any, logoUrl?: string) {
+export function buildPayslipHtml(payload: any, logoUrl?: string, watermarkUrl?: string) {
 
   const monthLabel = payload.month ?? '';
   const emp = payload.employee ?? {};
@@ -90,7 +90,8 @@ const lopDays = absentDays;
       }
 
       /* card */
-      #printable-area { 
+      #printable-area {
+        position: relative;
         max-width: 680px;
         margin: 0 auto;
         background: #fff;
@@ -99,6 +100,30 @@ const lopDays = absentDays;
         padding: 32px;
         box-shadow: 0 6px 18px rgba(2,6,23,0.06);
         box-sizing: border-box;
+        overflow: hidden;
+      }
+
+      .watermark {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+        user-select: none;
+        overflow: hidden;
+      }
+      .watermark img {
+        width: 260px;
+        height: 260px;
+        object-fit: contain;
+        opacity: 0.12;
+        display: block;
+      }
+      #printable-area > *:not(.watermark) {
+        position: relative;
+        z-index: 1;
       }
 
       /* header */
@@ -259,6 +284,7 @@ const lopDays = absentDays;
   </head>
   <body>
     <div id="printable-area" class="payslip">
+      ${watermarkUrl ? `<div class="watermark" aria-hidden="true"><img src="${escapeHtml(watermarkUrl)}" /></div>` : ''}
       <div class="header">
       
           <div class="logo-wrap" aria-hidden="true">
@@ -331,8 +357,7 @@ const lopDays = absentDays;
           <div>
             <div class="earning-row"><div>Basic Salary</div><div>${fmt(payload.earnings.basic)}</div></div>
             <div class="earning-row"><div>HRA</div><div>${fmt(payload.earnings.hra)}</div></div>
-            <div class="earning-row"><div>DA</div><div>${fmt(payload.earnings.da)}</div></div>
-            <div class="earning-row"><div>Special Allow.</div><div>${fmt(payload.earnings.specialAllowance)}</div></div>
+            <div class="earning-row"><div>Special Allow.</div><div>${fmt((payload.earnings.specialAllowance ?? 0) + (payload.earnings.da ?? 0))}</div></div>
           </div>
 
           <div class="deductions-col">

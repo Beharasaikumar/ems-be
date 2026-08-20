@@ -21,6 +21,18 @@ const ESI_EMPLOYEE_RATE = 0.0075;
 const ESI_WAGE_LIMIT = 21000;
 const PROFESSIONAL_TAX = 200;
 
+function assetDataUri(filename: string): string | undefined {
+  const assetPath = path.join(process.cwd(), 'public', filename);
+  if (fs.existsSync(assetPath)) {
+    const buf = fs.readFileSync(assetPath);
+    return `data:image/png;base64,${buf.toString('base64')}`;
+  }
+  if (process.env.PUBLIC_BASE_URL) {
+    return `${process.env.PUBLIC_BASE_URL.replace(/\/$/, '')}/${filename}`;
+  }
+  return undefined;
+}
+
 
 
 function isValidEmail(email?: string): boolean {
@@ -78,18 +90,12 @@ export default function payrollRouter(dataSource: DataSource) {
       console.warn('hydrate emp error', err);
     }
 
-    // logo
-    let logoDataUri;
-    const logoPath = path.join(process.cwd(), 'public', 'logo.png');
-    if (fs.existsSync(logoPath)) {
-      const buf = fs.readFileSync(logoPath);
-      logoDataUri = `data:image/png;base64,${buf.toString('base64')}`;
-    } else if (process.env.PUBLIC_BASE_URL) {
-      logoDataUri = `${process.env.PUBLIC_BASE_URL.replace(/\/$/, '')}/logo.png`;
-    }
+    // logo + watermark
+    const logoDataUri = assetDataUri('logo.png');
+    const watermarkDataUri = assetDataUri('watermark.png');
 
     try {
-      const html = buildPayslipHtml(payload, logoDataUri);
+      const html = buildPayslipHtml(payload, logoDataUri, watermarkDataUri);
 
       const browser = await puppeteer.launch({
         args: ['--no-sandbox', '--disable-setuid-sandbox'],
@@ -147,21 +153,15 @@ export default function payrollRouter(dataSource: DataSource) {
       console.warn('hydrate emp error', err);
     }
 
-    let logoDataUri;
-    const logoPath = path.join(process.cwd(), 'public', 'logo.png');
-    if (fs.existsSync(logoPath)) {
-      const buf = fs.readFileSync(logoPath);
-      logoDataUri = `data:image/png;base64,${buf.toString('base64')}`;
-    } else if (process.env.PUBLIC_BASE_URL) {
-      logoDataUri = `${process.env.PUBLIC_BASE_URL.replace(/\/$/, '')}/logo.png`;
-    }
+    const logoDataUri = assetDataUri('logo.png');
+    const watermarkDataUri = assetDataUri('watermark.png');
 
     if (!isValidEmail(to)) {
       return res.status(400).json({ message: 'Invalid email address' });
     }
 
     try {
-      const html = buildPayslipHtml(payload, logoDataUri);
+      const html = buildPayslipHtml(payload, logoDataUri, watermarkDataUri);
 
       const browser = await puppeteer.launch({
         args: ['--no-sandbox', '--disable-setuid-sandbox'],
