@@ -3,13 +3,14 @@ import { DataSource } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
 import { Attendance } from '../entities/Attendance';
 import { Employee } from '../entities/Employee';
+import { SalaryRevision } from '../entities/SalaryRevision';
 import { User } from '../entities/User';
 import bcrypt from 'bcrypt';
 import { MissingDeleteDateColumnError } from 'typeorm/error/MissingDeleteDateColumnError';
 import { AuthRequest, authRequired, requireRole } from '../middleware/auth';
 
 
-async function seedAttendanceFromJoinDate(dataSource: DataSource, employeeId: string, joinDateStr?: string) {
+export async function seedAttendanceFromJoinDate(dataSource: DataSource, employeeId: string, joinDateStr?: string) {
   if (!joinDateStr) return;
   const start = new Date(joinDateStr);
   if (isNaN(start.getTime())) return;
@@ -40,11 +41,35 @@ async function seedAttendanceFromJoinDate(dataSource: DataSource, employeeId: st
 }
 
 
+async function syncEmployeeSnapshotFromRevisions(dataSource: DataSource, employeeId: string) {
+  const revisionRepo = dataSource.getRepository(SalaryRevision);
+  const repo = dataSource.getRepository(Employee);
+  const revisions = await revisionRepo.find({ where: { employeeId }, order: { effectiveDate: 'ASC' } });
+  if (revisions.length === 0) return revisions;
+
+  const today = new Date().toISOString().split('T')[0];
+  let applicable = revisions[0];
+  for (const r of revisions) {
+    if (r.effectiveDate <= today) applicable = r;
+  }
+
+  await repo.update({ id: employeeId }, {
+    monthlyGrossSalary: applicable.monthlyGrossSalary,
+    basicSalary: applicable.basicSalary,
+    hra: applicable.hra,
+    da: applicable.da,
+    specialAllowance: applicable.specialAllowance,
+  });
+
+  return revisions;
+}
+
 export default function employeesRouter(dataSource: DataSource) {
   const router = Router();
 
   const userRepo = dataSource.getRepository(User);
   const repo = dataSource.getRepository(Employee);
+  const revisionRepo = dataSource.getRepository(SalaryRevision);
 
   router.use(authRequired);
 
@@ -174,6 +199,73 @@ export default function employeesRouter(dataSource: DataSource) {
       }
     }
     res.json(updated);
+  });
+
+  router.get('/:id/salary-revisions', authRequired, async (req, res) => {
+    const id = req.params.id;
+    const user = (req as any).user;
+
+    if (!user) return res.status(401).json({ message: 'Unauthorized' });
+    if (user.role !== 'admin' && user.id !== id) {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+
+    const revisions = await revisionRepo.find({ where: { employeeId: id }, order: { effectiveDate: 'ASC' } });
+    res.json(revisions);
+  });
+
+  router.post('/:id/salary-revisions', requireRole('admin'), async (req, res) => {
+    const id = req.params.id;
+    const emp = await repo.findOneBy({ id });
+    if (!emp) return res.status(404).json({ message: 'Employee not found' });
+
+    const { effectiveDate, monthlyGrossSalary, basicSalary, hra, da, specialAllowance, reason } = req.body;
+    if (!effectiveDate || monthlyGrossSalary === undefined || basicSalary === undefined) {
+      return res.status(400).json({ message: 'effectiveDate, monthlyGrossSalary and basicSalary are required' });
+    }
+
+    const existingCount = await revisionRepo.count({ where: { employeeId: id } });
+    if (existingCount === 0 && emp.basicSalary) {
+      const baselineGross = emp.monthlyGrossSalary || ((emp.basicSalary ?? 0) + (emp.hra ?? 0) + (emp.da ?? 0) + (emp.specialAllowance ?? 0));
+      const baseline = revisionRepo.create({
+        id: uuidv4(),
+        employeeId: id,
+        effectiveDate: emp.joinDate || effectiveDate,
+        monthlyGrossSalary: baselineGross,
+        basicSalary: emp.basicSalary ?? 0,
+        hra: emp.hra ?? 0,
+        da: emp.da ?? 0,
+        specialAllowance: emp.specialAllowance ?? 0,
+        reason: 'Joining Compensation',
+      });
+      await revisionRepo.save(baseline);
+    }
+
+    const revision = revisionRepo.create({
+      id: uuidv4(),
+      employeeId: id,
+      effectiveDate,
+      monthlyGrossSalary: Number(monthlyGrossSalary),
+      basicSalary: Number(basicSalary),
+      hra: Number(hra ?? 0),
+      da: Number(da ?? 0),
+      specialAllowance: Number(specialAllowance ?? 0),
+      reason: reason || undefined,
+    });
+    await revisionRepo.save(revision);
+
+    const revisions = await syncEmployeeSnapshotFromRevisions(dataSource, id);
+    const updatedEmployee = await repo.findOneBy({ id });
+    res.status(201).json({ revisions, employee: updatedEmployee });
+  });
+
+  router.delete('/:id/salary-revisions/:revisionId', requireRole('admin'), async (req, res) => {
+    const { id, revisionId } = req.params;
+    await revisionRepo.delete({ id: revisionId, employeeId: id });
+
+    const revisions = await syncEmployeeSnapshotFromRevisions(dataSource, id);
+    const updatedEmployee = await repo.findOneBy({ id });
+    res.json({ revisions, employee: updatedEmployee });
   });
 
   router.delete('/:id', requireRole('admin'), async (req, res) => {

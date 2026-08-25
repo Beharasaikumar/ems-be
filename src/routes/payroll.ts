@@ -3,6 +3,7 @@ import { DataSource } from 'typeorm';
 import { Employee } from '../entities/Employee';
 import { Attendance } from '../entities/Attendance';
 import { Payslip } from '../entities/Payslip';
+import { SalaryRevision } from '../entities/SalaryRevision';
 import { v4 as uuidv4 } from 'uuid';
 import PDFDocument from 'pdfkit';
 import fs from 'fs';
@@ -65,6 +66,7 @@ export default function payrollRouter(dataSource: DataSource) {
   const empRepo = dataSource.getRepository(Employee);
   const attRepo = dataSource.getRepository(Attendance);
   const payslipRepo = dataSource.getRepository(Payslip);
+  const revisionRepo = dataSource.getRepository(SalaryRevision);
 
   router.use(authRequired);
 
@@ -327,15 +329,29 @@ export default function payrollRouter(dataSource: DataSource) {
     paidDays = Math.min(paidDays, totalDaysInMonth);
     const attendancePercentage = (paidDays / totalDaysInMonth) * 100;
 
+    // Use whichever salary revision was in effect for the target month, not the employee's
+    // live (possibly since-incremented) snapshot — a payslip for a past month must reflect
+    // the salary that applied back then.
+    const monthEndStr = `${yearStr}-${String(monthIndex + 1).padStart(2, '0')}-${String(totalDaysInMonth).padStart(2, '0')}`;
+    const revisions = await revisionRepo.find({ where: { employeeId }, order: { effectiveDate: 'ASC' } });
+    let salarySource: { basicSalary?: number; hra?: number; da?: number; specialAllowance?: number; monthlyGrossSalary?: number } = emp;
+    if (revisions.length > 0) {
+      let applicable = revisions[0];
+      for (const r of revisions) {
+        if (r.effectiveDate <= monthEndStr) applicable = r;
+      }
+      salarySource = applicable;
+    }
+
     const calc = (amount?: number) => Math.round(((amount ?? 0) / totalDaysInMonth) * paidDays);
 
 
-    const basic = calc(emp.basicSalary);
-    const hra = calc(emp.hra);
-    const da = calc(emp.da);
-    const specialAllowance = calc(emp.specialAllowance);
+    const basic = calc(salarySource.basicSalary);
+    const hra = calc(salarySource.hra);
+    const da = calc(salarySource.da);
+    const specialAllowance = calc(salarySource.specialAllowance);
     const gross = basic + hra + da + specialAllowance;
-    const monthlyGrossSalary = emp.monthlyGrossSalary ?? gross;
+    const monthlyGrossSalary = salarySource.monthlyGrossSalary ?? gross;
     const pf =
       emp.pfEnabled
         ? Math.round(basic * PF_RATE)
