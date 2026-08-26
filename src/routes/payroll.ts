@@ -71,11 +71,15 @@ export default function payrollRouter(dataSource: DataSource) {
   router.use(authRequired);
 
 
-  router.post('/pdf-html/:payslipId', requireRole('admin'), async (req, res) => {
+  router.post('/pdf-html/:payslipId', async (req: any, res) => {
     const payslipId = req.params.payslipId;
     const ps = await payslipRepo.findOneBy({ id: payslipId });
     if (!ps) return res.status(404).json({ message: 'Payslip not found' });
     const payload = JSON.parse(ps.data);
+
+    if (req.user.role !== 'admin' && req.user.employeeId !== payload.employeeId) {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
 
     try {
       const emp = await empRepo.findOneBy({ id: payload.employeeId });
@@ -131,7 +135,7 @@ export default function payrollRouter(dataSource: DataSource) {
   });
 
 
-  router.post('/email-html/:payslipId', requireRole('admin'), async (req, res) => {
+  router.post('/email-html/:payslipId', async (req: any, res) => {
     const payslipId = req.params.payslipId;
     const { to, subject, text } = req.body as { to?: string; subject?: string; text?: string };
     if (!to) return res.status(400).json({ message: 'to required' });
@@ -139,6 +143,10 @@ export default function payrollRouter(dataSource: DataSource) {
     const ps = await payslipRepo.findOneBy({ id: payslipId });
     if (!ps) return res.status(404).json({ message: 'Payslip not found' });
     const payload = JSON.parse(ps.data);
+
+    if (req.user.role !== 'admin' && req.user.employeeId !== payload.employeeId) {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
 
     try {
       const emp = await empRepo.findOneBy({ id: payload.employeeId });
