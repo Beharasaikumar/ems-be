@@ -39,13 +39,21 @@ const absentDays =
 // final LOP
 const lopDays = absentDays;
 
+let formattedPeriod = monthLabel;
+if (monthStr && typeof monthStr === 'string') {
+  const mi = parseInt(monthStr.split('-')[1] ?? '1', 10) - 1;
+  if (!isNaN(mi)) {
+    formattedPeriod = new Date(year, mi).toLocaleString('default', { month: 'long', year: 'numeric' });
+  }
+}
+
   const grossMonthly =
     payload.monthlyGrossSalary ?? payload.earnings?.gross ?? 0;
 
   const logoHtml = logoUrl
-    ? `<div class="logo-container" aria-hidden="true" style="position:relative;width:200px;height:80px;flex:0 0 40px; align-items:center;justify-content:center;display:inline-flex;">
+    ? `<div class="logo-container" aria-hidden="true" style="display:inline-block;line-height:0;">
          <img src="${escapeHtml(logoUrl)}" alt="Company Logo"
-           style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;border-radius:999px;display:block;"
+           style="width:135px;height:auto;max-height:44px;object-fit:contain;display:block;margin:0 auto;"
            onerror="this.style.display='none'"/>
        </div>`
     : `<div class="logo-wrap" aria-hidden="true" style="position:relative;width:40px;height:40px;border-radius:999px;background:#0f172a;display:inline-flex;align-items:center;justify-content:center;flex:0 0 40px;box-shadow:0 6px 18px rgba(2,6,23,0.08);">
@@ -115,8 +123,8 @@ const lopDays = absentDays;
         overflow: hidden;
       }
       .watermark img {
-        width: 260px;
-        height: 260px;
+        width: 160px;
+        height: 140px;
         object-fit: contain;
         opacity: 0.12;
         display: block;
@@ -129,19 +137,50 @@ const lopDays = absentDays;
       /* header */
       .header {
         text-align:center;
-        border-bottom:1px solid var(--slate-200);
-        padding-bottom:20px;
-        margin-bottom:20px;
+        border-bottom: 1px solid var(--slate-200);
+        padding-bottom: 20px;
+        margin-bottom: 20px;
       }
-      
- 
-      
-    
-
-      .company h1 { margin:0; font-size:20px; font-weight:800; color:var(--slate-800); line-height:1; text-align:left; }
-      .company p { margin:0; font-size:10px; color:var(--slate-500); font-weight:700; letter-spacing:1px; text-transform:uppercase; }
-
-      .locations { color:var(--slate-400); font-size:11px; font-weight:700; letter-spacing:0.5px; margin-top:6px; text-transform:uppercase; }
+      .logo-container {
+        display: inline-block;
+        line-height: 0;
+      }
+      .logo-container img {
+        width: 135px;
+        height: auto;
+        max-height: 44px;
+        object-fit: contain;
+        display: block;
+        margin: 0 auto;
+      }
+      .company-gst {
+        margin: -3px 0 0;
+        font-size: 10px;
+        color: var(--slate-400);
+        line-height: 1.3;
+      }
+      .company-address {
+        margin: 1px 0 0;
+        font-size: 10px;
+        color: var(--slate-400);
+        line-height: 1.3;
+      }
+      .period-badge-wrap {
+        text-align: center;
+        margin-bottom: 28px;
+      }
+      .period-badge {
+        display: inline-block;
+        padding: 8px 24px;
+        border-radius: 8px;
+        background: var(--slate-50);
+        color: var(--slate-800);
+        font-weight: 700;
+        font-size: 13px;
+        border: 1px solid var(--slate-200);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
 
       /* details grid (two columns) */
       .details {
@@ -286,15 +325,18 @@ const lopDays = absentDays;
     <div id="printable-area" class="payslip">
       ${watermarkUrl ? `<div class="watermark" aria-hidden="true"><img src="${escapeHtml(watermarkUrl)}" /></div>` : ''}
       <div class="header">
-      
-          <div class="logo-wrap" aria-hidden="true">
-            ${logoHtml}
-          </div>
-         
-       
-       </div>
+        <div class="logo-wrap" aria-hidden="true">
+          ${logoHtml}
+        </div>
+        <p class="company-gst">GSTIN: 37AALFL9327Q1ZC</p>
+        <p class="company-address">1-118-24/2, 2nd floor, sector 12, near Ushodaya Junc., MVP, Visakhapatnam, AP - 530017</p>
+      </div>
 
-      <div style="text-align:center; font-weight:700; color:var(--slate-700); margin-bottom:14px;">Payslip — ${escapeHtml(monthLabel)}</div>
+      <div class="period-badge-wrap">
+        <span class="period-badge">
+          Payslip for ${escapeHtml(formattedPeriod)}
+        </span>
+      </div>
 
       <div class="details">
         <div class="field">
@@ -334,7 +376,7 @@ const lopDays = absentDays;
 
         <div class="field text-right">
           <div class="label">LOP Days</div>
-          <div class="value">${lopDays} days</div>
+          <div class="value" style="color:#dc2626; font-weight:600;">${lopDays} days</div>
         </div>
       </div>
 
